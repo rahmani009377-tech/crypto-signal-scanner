@@ -33,25 +33,30 @@ jobs:
         run: python scanner.py
 
       - name: Save fresh signals
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
+          cp signals.json /tmp/signals.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add signals.json
-          if git diff --cached --quiet; then
-            echo "signals.json unchanged; nothing to commit."
-            exit 0
-          fi
-          git commit -m "Update market signals"
+
           for attempt in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            cp /tmp/signals.json signals.json
+            git add signals.json
+
+            if git diff --cached --quiet; then
+              echo "signals.json is unchanged; nothing to commit."
+              exit 0
+            fi
+
+            git commit -m "Update market signals"
             if git push origin HEAD:main; then
               echo "Signals published successfully."
               exit 0
             fi
-            echo "Push attempt $attempt failed; rebasing on latest main."
-            git fetch origin main
-            git rebase -X theirs origin/main
+
+            echo "Push attempt $attempt failed; retrying from latest main."
           done
+
           echo "Could not publish signals after 3 attempts."
           exit 1
