@@ -1,9 +1,10 @@
 {
-  "scan_time_utc": "2026-10-20T17:50:13.688827+00:00",
+  "scan_time_utc": "2026-10-20T17:51:36.475902+00:00",
   "scanner_status": "SUCCESS",
   "valid_minutes": 15,
   "signals_found": 20,
-  "spot_signals": [
+  "confirmed_signals_found": 2,
+  "spot_confirmed_signals": [
     {
       "symbol": "NFPUSDT",
       "market_type": "SPOT",
@@ -11,20 +12,11 @@
       "change_24h": -65.849,
       "volume_usdt": 3834192.03235,
       "direction": "BEARISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
-    },
-    {
-      "symbol": "VICUSDT",
-      "market_type": "SPOT",
-      "price": 0.0077,
-      "change_24h": -42.963,
-      "volume_usdt": 1019380.606824,
-      "direction": "BEARISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "CONFIRMED_15M_1H",
+      "trend_15m_pct": -18.4332,
+      "trend_1h_pct": -28.6184
     },
     {
       "symbol": "VANRYUSDT",
@@ -33,31 +25,78 @@
       "change_24h": -37.128,
       "volume_usdt": 2320295.244185,
       "direction": "BEARISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "CONFIRMED_15M_1H",
+      "trend_15m_pct": -11.8563,
+      "trend_1h_pct": -18.7743
+    }
+  ],
+  "spot_signals": [
+    {
+      "symbol": "NFPUSDT",
+      "market_type": "SPOT",
+      "price": 0.00181,
+      "change_24h": -65.849,
+      "volume_usdt": 3834192.03235,
+      "direction": "BEARISH",
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "CONFIRMED_15M_1H",
+      "trend_15m_pct": -18.4332,
+      "trend_1h_pct": -28.6184
+    },
+    {
+      "symbol": "VICUSDT",
+      "market_type": "SPOT",
+      "price": 0.0077,
+      "change_24h": -42.963,
+      "volume_usdt": 1019380.606824,
+      "direction": "BEARISH",
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CONFIRMED_15M_1H",
+      "trend_15m_pct": -11.25,
+      "trend_1h_pct": -3.6145
+    },
+    {
+      "symbol": "VANRYUSDT",
+      "market_type": "SPOT",
+      "price": 0.00074,
+      "change_24h": -37.128,
+      "volume_usdt": 2320295.244185,
+      "direction": "BEARISH",
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "CONFIRMED_15M_1H",
+      "trend_15m_pct": -11.8563,
+      "trend_1h_pct": -18.7743
     },
     {
       "symbol": "EPICUSDT",
       "market_type": "SPOT",
-      "price": 0.1881,
-      "change_24h": -29.709,
-      "volume_usdt": 5268259.92211,
+      "price": 0.1883,
+      "change_24h": -29.607,
+      "volume_usdt": 5270417.36044,
       "direction": "BEARISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CONFIRMED_15M_1H",
+      "trend_15m_pct": 0.4787,
+      "trend_1h_pct": 1.6766
     },
     {
       "symbol": "IOSTUSDT",
       "market_type": "SPOT",
-      "price": 0.000916,
-      "change_24h": 23.951,
-      "volume_usdt": 4168532.419895,
+      "price": 0.00092,
+      "change_24h": 24.493,
+      "volume_usdt": 4173224.634642,
       "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CONFIRMED_15M_1H",
+      "trend_15m_pct": 0.5459,
+      "trend_1h_pct": 5.6517
     },
     {
       "symbol": "SCRTUSDT",
@@ -66,166 +105,172 @@
       "change_24h": -22.826,
       "volume_usdt": 1502038.29646,
       "direction": "BEARISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CONFIRMED_15M_1H",
+      "trend_15m_pct": 11.4286,
+      "trend_1h_pct": -2.7778
+    },
+    {
+      "symbol": "COMPUSDT",
+      "market_type": "SPOT",
+      "price": 26.22,
+      "change_24h": 22.81,
+      "volume_usdt": 9318227.54374,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CONFIRMED_15M_1H",
+      "trend_15m_pct": -4.7012,
+      "trend_1h_pct": 13.8589
     },
     {
       "symbol": "GNSUSDT",
       "market_type": "SPOT",
       "price": 0.484,
-      "change_24h": 21.914,
-      "volume_usdt": 3587012.99895,
+      "change_24h": 22.222,
+      "volume_usdt": 3589058.35078,
       "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
-    },
-    {
-      "symbol": "COMPUSDT",
-      "market_type": "SPOT",
-      "price": 26.03,
-      "change_24h": 21.749,
-      "volume_usdt": 9296570.68329,
-      "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CONFIRMED_15M_1H",
+      "trend_15m_pct": 2.7778,
+      "trend_1h_pct": -11.3636
     },
     {
       "symbol": "REZUSDT",
       "market_type": "SPOT",
-      "price": 0.003863,
-      "change_24h": 16.496,
-      "volume_usdt": 2737272.2757752,
+      "price": 0.003852,
+      "change_24h": 16.164,
+      "volume_usdt": 2742732.1392035,
       "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
     },
     {
       "symbol": "AVAUSDT",
       "market_type": "SPOT",
-      "price": 0.361,
-      "change_24h": -15.929,
-      "volume_usdt": 6243974.39828,
+      "price": 0.3608,
+      "change_24h": -15.858,
+      "volume_usdt": 6242087.52821,
       "direction": "BEARISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
     },
     {
       "symbol": "OSMOUSDT",
       "market_type": "SPOT",
-      "price": 0.0477,
-      "change_24h": -15.575,
-      "volume_usdt": 3252764.566278,
+      "price": 0.0479,
+      "change_24h": -15.071,
+      "volume_usdt": 3251257.377313,
       "direction": "BEARISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
-    },
-    {
-      "symbol": "BATUSDT",
-      "market_type": "SPOT",
-      "price": 0.2065,
-      "change_24h": 14.85,
-      "volume_usdt": 7135342.0736,
-      "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
     },
     {
       "symbol": "GTCUSDT",
       "market_type": "SPOT",
-      "price": 0.30679,
-      "change_24h": -14.795,
-      "volume_usdt": 17085615.451881,
+      "price": 0.30692,
+      "change_24h": -14.971,
+      "volume_usdt": 17051885.812509,
       "direction": "BEARISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
+    },
+    {
+      "symbol": "BATUSDT",
+      "market_type": "SPOT",
+      "price": 0.2066,
+      "change_24h": 14.969,
+      "volume_usdt": 7136982.8885,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
     },
     {
       "symbol": "ALTUSDT",
       "market_type": "SPOT",
-      "price": 0.01006,
-      "change_24h": 13.672,
-      "volume_usdt": 13822545.39392,
+      "price": 0.01005,
+      "change_24h": 13.817,
+      "volume_usdt": 13825059.09453,
       "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
-    },
-    {
-      "symbol": "BMTUSDT",
-      "market_type": "SPOT",
-      "price": 0.01956,
-      "change_24h": 13.589,
-      "volume_usdt": 9121209.616553,
-      "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
     },
     {
       "symbol": "WLDUSDT",
       "market_type": "SPOT",
-      "price": 0.579,
-      "change_24h": 13.396,
-      "volume_usdt": 88056704.58107,
+      "price": 0.5785,
+      "change_24h": 13.454,
+      "volume_usdt": 88246626.63444,
       "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
+    },
+    {
+      "symbol": "BMTUSDT",
+      "market_type": "SPOT",
+      "price": 0.01952,
+      "change_24h": 13.291,
+      "volume_usdt": 9130151.807564,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
     },
     {
       "symbol": "AEROUSDT",
       "market_type": "SPOT",
-      "price": 0.87,
-      "change_24h": 11.868,
-      "volume_usdt": 6729907.0873,
+      "price": 0.8699,
+      "change_24h": 12.216,
+      "volume_usdt": 6720845.2316,
       "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
-    },
-    {
-      "symbol": "VELODROMEUSDT",
-      "market_type": "SPOT",
-      "price": 0.03794,
-      "change_24h": 11.786,
-      "volume_usdt": 2674157.858354,
-      "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
     },
     {
       "symbol": "KERNELUSDT",
       "market_type": "SPOT",
-      "price": 0.0463,
-      "change_24h": 11.566,
-      "volume_usdt": 1862524.60868,
+      "price": 0.0465,
+      "change_24h": 12.048,
+      "volume_usdt": 1864228.80828,
       "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
     },
     {
-      "symbol": "ERAUSDT",
+      "symbol": "VELODROMEUSDT",
       "market_type": "SPOT",
-      "price": 0.0736,
-      "change_24h": 11.515,
-      "volume_usdt": 9328469.64837,
+      "price": 0.03791,
+      "change_24h": 11.928,
+      "volume_usdt": 2674164.187876,
       "direction": "BULLISH",
-      "created_at": "2026-10-20T17:50:13.688827+00:00",
-      "expires_at": "2026-10-20T18:05:13.688827+00:00",
-      "status": "CANDIDATE_NOT_CONFIRMED"
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
+    },
+    {
+      "symbol": "PEPEUSDT",
+      "market_type": "SPOT",
+      "price": 4.59e-06,
+      "change_24h": 11.679,
+      "volume_usdt": 53283289.29654435,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T17:51:36.475902+00:00",
+      "expires_at": "2026-10-20T18:06:36.475902+00:00",
+      "status": "NOT_CHECKED_LIMIT"
     }
   ],
   "futures_signals": [],
   "futures_error": "https://fapi.binance.com/fapi/v1/ticker/24hr: HTTP 451; body='{\\n  \"code\": 0,\\n  \"msg\": \"Service unavailable from a restricted location according to \\'b. Eligibility\\' in https://www.binance.com/en/terms. Please contact customer service if you believe you received t'",
-  "notice": "Signals are 24-hour momentum candidates only, not confirmed entries. Check short-term trend and current price before any trade. Never act on signals after expires_at."
+  "notice": "spot_signals are momentum candidates. Only spot_confirmed_signals passed both closed 15-minute and 1-hour trend checks. Futures data may be unavailable due to Binance regional restrictions. These are still not guaranteed entries. Never act after expires_at."
 }
