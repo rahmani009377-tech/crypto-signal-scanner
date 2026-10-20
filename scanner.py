@@ -5,6 +5,7 @@ import urllib.error
 from datetime import datetime, timezone, timedelta
 
 SPOT_API = "https://data-api.binance.vision/api/v3/ticker/24hr"
+SPOT_KLINES_API = "https://data-api.binance.vision/api/v3/klines"
 FUTURES_API = "https://fapi.binance.com/fapi/v1/ticker/24hr"
 
 MIN_VOLUME_USDT = 1_000_000
@@ -80,6 +81,56 @@ def build_signals(data, market_type, now):
     return results[:MAX_SIGNALS_PER_MARKET]
 
 
+def get_trend(symbol, interval):
+    url = (
+        f"{SPOT_KLINES_API}?symbol={symbol}"
+        f"&interval={interval}&limit=6"
+    )
+    candles = get_data(url)
+    if not isinstance(candles, list) or len(candles) < 6:
+        raise RuntimeError(f"Not enough {interval} candles for {symbol}")
+
+    # Drop the last candle because it may still be forming.
+    closed = candles[:-1]
+    old_close = float(closed[-4][4])
+    previous_close = float(closed[-2][4])
+    last_close = float(closed[-1][4])
+    if old_close <= 0:
+        raise RuntimeError(f"Invalid {interval} candle price for {symbol}")
+
+    change_pct = (last_close / old_close - 1.0) * 100.0
+    if last_close > previous_close and change_pct > 0:
+        direction = "BULLISH"
+    elif last_close < previous_close and change_pct < 0:
+        direction = "BEARISH"
+    else:
+        direction = "NEUTRAL"
+
+    return {"direction": direction, "change_pct": round(change_pct, 4)}
+
+
+def confirm_spot_signals(candidates):
+    confirmed = []
+    for signal in candidates:
+        try:
+            trend_15m = get_trend(signal["symbol"], "15m")
+            trend_1h = get_trend(signal["symbol"], "1h")
+            signal["trend_15m_pct"] = trend_15m["change_pct"]
+            signal["trend_1h_pct"] = trend_1h["change_pct"]
+            if (
+                trend_15m["direction"] == signal["direction"]
+                and trend_1h["direction"] == signal["direction"]
+            ):
+                signal["status"] = "CONFIRMED_15M_1H"
+                confirmed.append(signal)
+            else:
+                signal["status"] = "NOT_CONFIRMED_15M_1H"
+        except Exception as error:
+            signal["status"] = "NOT_CONFIRMED_DATA_UNAVAILABLE"
+            signal["confirmation_error"] = str(error)[:160]
+    return candidates, confirmed
+
+
 def empty_report(now, status, error=None):
     return {
         "scan_time_utc": now.isoformat(),
@@ -138,13 +189,16 @@ def scan_market():
         "scanner_status": "SUCCESS",
         "valid_minutes": VALID_MINUTES,
         "signals_found": len(spot_signals) + len(futures_signals),
+        "confirmed_signals_found": len(spot_confirmed),
+        "spot_confirmed_signals": spot_confirmed,
         "spot_signals": spot_signals,
         "futures_signals": futures_signals,
         "futures_error": futures_error,
         "notice": (
-            "Signals are 24-hour momentum candidates only, not confirmed entries. "
-            "Check short-term trend and current price before any trade. "
-            "Never act on signals after expires_at."
+            "spot_signals are momentum candidates. Only spot_confirmed_signals "
+            "passed both closed 15-minute and 1-hour trend checks. Futures data "
+            "may be unavailable due to Binance regional restrictions. These are "
+            "still not guaranteed entries. Never act after expires_at."
         ),
     }
 
