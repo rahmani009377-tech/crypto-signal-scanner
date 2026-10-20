@@ -25,7 +25,7 @@ def get_data(url):
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=20) as response:
+        with urllib.request.urlopen(request, timeout=8) as response:
             body = response.read().decode("utf-8", errors="replace")
             if not body.strip():
                 raise RuntimeError(f"Empty response; HTTP status={response.status}")
