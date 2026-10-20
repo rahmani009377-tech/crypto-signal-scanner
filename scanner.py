@@ -19,16 +19,34 @@ MIN_VOLUME = 1_000_000
 MIN_CHANGE = 5.0
 VALID_MINUTES = 15
 
-
 def get_data(url):
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "CryptoSignalScanner/1.0"}
+        headers={"User-Agent": "Mozilla/5.0"}
     )
 
-    with urllib.request.urlopen(request, timeout=20) as response:
-        body = response.read().decode("utf-8")
-        return json.loads(body)
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            body = response.read().decode("utf-8", errors="replace")
+
+            if not body.strip():
+                raise RuntimeError(
+                    f"Empty response; HTTP status={response.status}"
+                )
+
+            try:
+                return json.loads(body)
+            except json.JSONDecodeError:
+                raise RuntimeError(
+                    f"Invalid JSON; HTTP status={response.status}; "
+                    f"body={body[:200]!r}"
+                )
+
+    except urllib.error.HTTPError as error:
+        body = error.read().decode("utf-8", errors="replace")
+        raise RuntimeError(
+            f"HTTP {error.code}; body={body[:200]!r}"
+        )
 
 
 def get_futures_data():
