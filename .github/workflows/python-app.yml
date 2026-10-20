@@ -8,15 +8,21 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: crypto-signal-scanner-main
+  cancel-in-progress: false
+
 jobs:
   scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 3
 
     steps:
       - name: Get repository
         uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -26,10 +32,26 @@ jobs:
       - name: Run scanner
         run: python scanner.py
 
-      - name: Save signals
+      - name: Save fresh signals
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add signals.json
-          git diff --cached --quiet || git commit -m "Update market signals"
-          git push
+          if git diff --cached --quiet; then
+            echo "signals.json unchanged; nothing to commit."
+            exit 0
+          fi
+          git commit -m "Update market signals"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "Signals published successfully."
+              exit 0
+            fi
+            echo "Push attempt $attempt failed; rebasing on latest main."
+            git fetch origin main
+            git rebase -X theirs origin/main
+          done
+          echo "Could not publish signals after 3 attempts."
+          exit 1
