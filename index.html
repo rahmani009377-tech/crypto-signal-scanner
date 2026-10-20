@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1220">
+<meta name="description" content="داشبورد اسکنر سیگنال ارز دیجیتال؛ فقط داده تازه بازار اسپات بایننس">
+<title>اسکنر سیگنال رمزارز</title>
+<style>
+:root{color-scheme:dark;--bg:#08111f;--panel:#111d30;--panel2:#16243a;--line:#263750;--text:#edf4ff;--muted:#9fb0c8;--green:#32d49a;--red:#ff7385;--amber:#ffc66d;--blue:#7cb8ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(900px 500px at 90% -10%,#1a3453 0%,transparent 60%),var(--bg);color:var(--text);font-family:Tahoma,"Segoe UI",Arial,sans-serif;line-height:1.6}
+.wrap{max-width:1050px;margin:auto;padding:20px 14px 42px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}.brand{display:flex;gap:12px;align-items:center}.logo{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#2dd4bf,#3b82f6);display:grid;place-items:center;font-size:24px;color:#061221;font-weight:bold}.eyebrow{font-size:12px;color:var(--muted)}h1{font-size:23px;margin:0}h2{font-size:17px;margin:0 0 12px}.actions{display:flex;gap:8px;flex-wrap:wrap}button,.btn{border:1px solid var(--line);border-radius:11px;padding:10px 13px;background:var(--panel2);color:var(--text);font:inherit;cursor:pointer;text-decoration:none}button.primary{background:#2563eb;border-color:#3b82f6}button:disabled{opacity:.5;cursor:wait}.statusbar{padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#0e1a2b;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}.dot{width:9px;height:9px;border-radius:50%;background:var(--amber);display:inline-block}.dot.ok{background:var(--green)}.dot.bad{background:var(--red)}.statusText{font-size:13px;flex:1}.muted{color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}.stat,.panel{background:linear-gradient(160deg,var(--panel),#0d1829);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}.stat .num{font-size:27px;font-weight:800;letter-spacing:-.5px}.stat .label{font-size:12px;color:var(--muted)}.sectionHead{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:22px 0 10px}.pill{display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border:1px solid var(--line);border-radius:99px;font-size:12px;color:var(--muted)}.tabs{display:flex;gap:7px;flex-wrap:wrap}.tab{padding:8px 12px}.tab.active{background:#23466c;border-color:#3d76ad}.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.coin{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;min-width:0}.coinTop{display:flex;justify-content:space-between;align-items:center;gap:8px}.symbol{font-size:17px;font-weight:800;direction:ltr;text-align:left}.direction{font-size:12px;border-radius:8px;padding:4px 8px;font-weight:700}.up{color:var(--green);background:#10382f}.down{color:var(--red);background:#3c202b}.price{font-size:21px;font-weight:750;margin:12px 0 3px;overflow-wrap:anywhere}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.metric{background:#0b1626;border-radius:10px;padding:8px}.metric small{display:block;color:var(--muted);font-size:11px}.metric strong{font-size:13px;direction:ltr;display:block;text-align:right;overflow-wrap:anywhere}.expiry{font-size:12px;margin-top:12px;color:var(--muted)}.empty{padding:28px 14px;text-align:center;border:1px dashed var(--line);border-radius:14px;color:var(--muted)}.notice{font-size:12px;color:var(--muted);margin-top:18px}.foot{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px;font-size:12px;color:var(--muted)}a{color:var(--blue)}.error{color:var(--red)}@media(max-width:620px){.wrap{padding:14px 10px 30px}h1{font-size:20px}.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.stat{padding:11px}.stat .num{font-size:22px}.stat .label{font-size:10px}.cards{grid-template-columns:1fr}.actions button{padding:8px 10px;font-size:12px}}
+</style>
+<link rel="manifest" href="./manifest.webmanifest">
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+ <div class="brand"><div class="logo">↗</div><div><div class="eyebrow">BINANCE • READ-ONLY</div><h1>داشبورد سیگنال رمزارز</h1><div class="eyebrow">فقط بازار اسپات • بدون معامله خودکار</div></div></div>
+ <div class="actions"><button id="refresh" class="primary">↻ تازه‌سازی</button><button id="notify">فعال‌سازی هشدار</button></div>
+</header>
+<div class="statusbar"><span id="dot" class="dot"></span><span id="status" class="statusText">در حال دریافت آخرین گزارش…</span><span id="updated" class="pill">آخرین بررسی: —</span></div>
+<div class="grid">
+ <div class="stat"><div id="confirmedCount" class="num">—</div><div class="label">تأییدشده و تازه</div></div>
+ <div class="stat"><div id="candidateCount" class="num">—</div><div class="label">نامزد بازار</div></div>
+ <div class="stat"><div id="age" class="num">—</div><div class="label">عمر گزارش</div></div>
+</div>
+<div class="sectionHead"><h2>سیگنال‌های قابل‌بررسی</h2><span class="pill">انقضا: ۱۵ دقیقه</span></div>
+<div id="confirmed" class="cards"><div class="empty">در حال بارگذاری…</div></div>
+<div class="sectionHead"><h2>نامزدها (هنوز تأیید نشده)</h2><div class="tabs"><button class="tab active" data-filter="all">همه</button><button class="tab" data-filter="up">صعودی</button><button class="tab" data-filter="down">نزولی</button></div></div>
+<div id="candidates" class="cards"><div class="empty">در حال بارگذاری…</div></div>
+<div class="panel" style="margin-top:18px"><h2>وضعیت بازارها</h2><div id="futures" class="muted">در حال بررسی…</div><div class="notice">اگر دسترسی فیوچرز محدود باشد، این صفحه فقط اسپات را نشان می‌دهد. هیچ سفارش خرید یا فروشی ثبت نمی‌شود. سیگنال تأییدشده نیز تضمین سود نیست؛ قیمت و حجم فعلی را قبل از تصمیم بررسی کن.</div></div>
+<div class="foot"><span>به‌روزرسانی خودکار صفحه: هر ۶۰ ثانیه</span><a href="https://github.com/rahmani009377-tech/crypto-signal-scanner" target="_blank" rel="noopener">مخزن GitHub</a><a href="https://github.com/rahmani009377-tech/crypto-signal-scanner/blob/main/signals.json" target="_blank" rel="noopener">فایل داده خام</a></div>
+</div>
+<script>
+const DATA_URL='https://raw.githubusercontent.com/rahmani009377-tech/crypto-signal-scanner/main/signals.json';
+const $=id=>document.getElementById(id);
+let report=null, filter='all', known=new Set(), firstLoad=true, busy=false;
+const fmtNum=(n,max=8)=>Number(n).toLocaleString('en-US',{maximumFractionDigits:max});
+const fmtPct=n=>(Number(n)>0?'+':'')+fmtNum(n,2)+'%';
+const fmtVol=n=>Number(n)>=1e6?(Number(n)/1e6).toFixed(2)+'M USDT':fmtNum(n,0)+' USDT';
+const parseTime=s=>{const d=new Date(s);return Number.isNaN(d.getTime())?null:d};
+function fresh(s,now){const exp=parseTime(s.expires_at);const created=parseTime(s.created_at);return !!exp&&!!created&&exp.getTime()>now&&created.getTime()<=now+60000&&now-created.getTime()<=15*60000;}
+function card(s,now,confirmed){
+ const up=s.direction==='BULLISH'; const exp=parseTime(s.expires_at); const remaining=exp?Math.max(0,Math.ceil((exp-now)/60000)):0;
+ const div=document.createElement('article');div.className='coin';
+ const top=document.createElement('div');top.className='coinTop';
+ const sym=document.createElement('div');sym.className='symbol';sym.textContent=s.symbol||'UNKNOWN';
+ const dir=document.createElement('span');dir.className='direction '+(up?'up':'down');dir.textContent=(up?'▲ صعودی':'▼ نزولی')+(confirmed?' • تأیید روند':'');
+ top.append(sym,dir);div.append(top);
+ const price=document.createElement('div');price.className='price';price.textContent=fmtNum(s.price,10)+' USDT';div.append(price);
+ const metrics=document.createElement('div');metrics.className='metrics';
+ [[ 'تغییر ۲۴ساعته',fmtPct(s.change_24h)],['حجم ۲۴ساعته',fmtVol(s.volume_usdt)],['روند ۱۵ دقیقه',s.trend_15m_pct==null?'بررسی نشده':fmtPct(s.trend_15m_pct)],['روند یک‌ساعت',s.trend_1h_pct==null?'بررسی نشده':fmtPct(s.trend_1h_pct)]].forEach(([k,v])=>{const m=document.createElement('div');m.className='metric';const sm=document.createElement('small');sm.textContent=k;const st=document.createElement('strong');st.textContent=v;m.append(sm,st);metrics.append(m)});div.append(metrics);
+ const ex=document.createElement('div');ex.className='expiry';ex.textContent='اعتبار باقی‌مانده: '+remaining+' دقیقه';div.append(ex);
+ const link=document.createElement('a');link.href='https://www.binance.com/en/trade/'+encodeURIComponent(s.symbol.replace('USDT','_USDT'));link.target='_blank';link.rel='noopener';link.textContent='بازکردن بازار در بایننس ↗';link.style.display='inline-block';link.style.marginTop='10px';link.style.fontSize='13px';div.append(link);
+ return div;
+}
+function renderList(target,items,now,confirmed,emptyText){
+ const host=$(target);host.replaceChildren();
+ if(!items.length){const e=document.createElement('div');e.className='empty';e.textContent=emptyText;host.append(e);return;}
+ items.forEach(s=>host.append(card(s,now,confirmed)));
+}
+async function load(manual=false){
+ if(busy)return;busy=true;$('refresh').disabled=true;
+ if(manual)$('status').textContent='در حال دریافت داده تازه…';
+ try{
+  const r=await fetch(DATA_URL+'?t='+Date.now(),{cache:'no-store'});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const data=await r.json(); if(!data||!data.scan_time_utc)throw new Error('قالب گزارش نامعتبر است');
+  report=data; const now=Date.now(); const scanned=parseTime(data.scan_time_utc); const age=scanned?Math.max(0,Math.floor((now-scanned.getTime())/60000)):99999;
+  $('updated').textContent='اسکن: '+(scanned?scanned.toLocaleTimeString('fa-IR'):'نامعلوم');
+  $('age').textContent=age<60?age+' دقیقه':Math.floor(age/60)+' ساعت';
+  const isFresh=!!scanned&&age<15&&scanned.getTime()<=now+60000&&data.scanner_status==='SUCCESS';
+  const confirmed=(isFresh?(data.spot_confirmed_signals||[]):[]).filter(s=>fresh(s,now)&&s.status==='CONFIRMED_15M_1H');
+  const candidates=(isFresh?(data.spot_signals||[]):[]).filter(s=>fresh(s,now)&&s.status==='CANDIDATE_NOT_CONFIRMED');
+  $('confirmedCount').textContent=confirmed.length;$('candidateCount').textContent=candidates.length;
+  $('dot').className='dot '+(isFresh?'ok':'bad');
+  $('status').textContent=isFresh?'گزارش تازه است؛ فقط سیگنال‌های منقضی‌نشده نمایش داده می‌شوند.':(data.scanner_status==='ERROR'?'اسکن ناموفق؛ سیگنال تازه موجود نیست.':'گزارش قدیمی است؛ برای ایمنی سیگنالی نمایش داده نمی‌شود.');
+  if(data.futures_error){$('futures').textContent='فیوچرز در دسترس نیست: '+data.futures_error.slice(0,190);$('futures').className='error';}
+  else{$('futures').textContent=(data.futures_signals||[]).length+' نامزد فیوچرز در گزارش؛ داده باید جداگانه تأیید شود.';$('futures').className='muted';}
+  renderList('confirmed',confirmed,now,true,'فعلاً سیگنال تأییدشده و تازه‌ای نیست.');
+  const visible=candidates.filter(s=>filter==='all'||(filter==='up'?s.direction==='BULLISH':s.direction==='BEARISH'));
+  renderList('candidates',visible,now,false,'فعلاً نامزد تازه‌ای در این دسته نیست.');
+  const current=new Set(confirmed.map(s=>s.symbol+':'+s.direction));
+  if(!firstLoad&&'Notification'in window&&Notification.permission==='granted'){
+   for(const s of confirmed){const key=s.symbol+':'+s.direction;if(!known.has(key))new Notification('سیگنال اسپات: '+s.symbol,{body:(s.direction==='BULLISH'?'صعودی':'نزولی')+'؛ فقط بررسی کنید، تضمین سود نیست.'});}
+  }
+  known=current;firstLoad=false;
+ }catch(e){$('dot').className='dot bad';$('status').textContent='دریافت گزارش ناموفق: '+e.message;$('confirmedCount').textContent='—';$('candidateCount').textContent='—';$('confirmed').replaceChildren();$('candidates').replaceChildren();const msg=document.createElement('div');msg.className='empty';msg.textContent='اتصال به فایل سیگنال برقرار نشد. اتصال اینترنت را بررسی و تازه‌سازی کن.';$('confirmed').append(msg);}
+ finally{busy=false;$('refresh').disabled=false;}
+}
+$('refresh').addEventListener('click',()=>load(true));
+$('notify').addEventListener('click',async()=>{if(!('Notification'in window)){alert('این مرورگر اعلان را پشتیبانی نمی‌کند.');return;}const p=await Notification.requestPermission();$('notify').textContent=p==='granted'?'هشدار فعال است':'اجازه اعلان داده نشد';});
+document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));if(report){const now=Date.now();const scanned=parseTime(report.scan_time_utc);const valid=scanned&&now-scanned.getTime()<15*60000&&report.scanner_status==='SUCCESS';const items=(valid?report.spot_signals||[]:[]).filter(s=>fresh(s,now)&&s.status==='CANDIDATE_NOT_CONFIRMED');renderList('candidates',items.filter(s=>filter==='all'||(filter==='up'?s.direction==='BULLISH':s.direction==='BEARISH')),now,false,'فعلاً نامزد تازه‌ای در این دسته نیست.');}}));
+load();setInterval(()=>load(false),60000);
+</script>
+</body></html>
