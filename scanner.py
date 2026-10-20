@@ -2,7 +2,7 @@ import json
 import urllib.request
 from datetime import datetime, timezone
 
-API_URL = "https://api.binance.com/api/v3/ticker/24hr"
+API_URL = "https://data-api.binance.vision/api/v3/ticker/24hr"
 
 
 def get_market_data():
