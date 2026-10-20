@@ -158,7 +158,8 @@ def scan_market():
         spot_data = get_data(SPOT_API)
         if not isinstance(spot_data, list):
             raise RuntimeError("Spot API returned an unexpected response")
-        spot_signals = build_signals(spot_data, "SPOT", now)
+        spot_candidates = build_signals(spot_data, "SPOT", now)
+        spot_signals, spot_confirmed = confirm_spot_signals(spot_candidates)
     except Exception as error:
         # Replace any old file with an explicit empty error report, never stale signals.
         report = empty_report(
