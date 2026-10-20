@@ -100,10 +100,26 @@ def scan_market():
     now = datetime.now(timezone.utc)
     print("Starting market scan:", now.isoformat())
 
-    spot_data = get_data(SPOT_API)
-    if not isinstance(spot_data, list):
-        raise RuntimeError("Spot API returned an unexpected response")
-    spot_signals = build_signals(spot_data, "SPOT", now)
+    try:
+        spot_data = get_data(SPOT_API)
+        if not isinstance(spot_data, list):
+            raise RuntimeError("Spot API returned an unexpected response")
+        spot_signals = build_signals(spot_data, "SPOT", now)
+    except Exception as error:
+        # Replace any old file with an explicit empty error report, never stale signals.
+        report = empty_report(
+            now,
+            "ERROR",
+            f"{SPOT_API}: {str(error).replace(chr(10), ' ')}",
+        )
+        report["notice"] = (
+            "Spot data could not be fetched. All signal lists are empty to avoid "
+            "showing stale signals. Wait for the next successful scan."
+        )
+        with open("signals.json", "w", encoding="utf-8") as file:
+            json.dump(report, file, ensure_ascii=False, indent=2)
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return
 
     futures_signals = []
     futures_error = None
