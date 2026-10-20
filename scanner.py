@@ -111,7 +111,10 @@ def get_trend(symbol, interval):
 
 def confirm_spot_signals(candidates):
     confirmed = []
-    for signal in candidates:
+    for index, signal in enumerate(candidates):
+        if index >= 8:
+            signal["status"] = "NOT_CHECKED_LIMIT"
+            continue
         try:
             trend_15m = get_trend(signal["symbol"], "15m")
             trend_1h = get_trend(signal["symbol"], "1h")
