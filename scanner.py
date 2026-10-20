@@ -1,70 +1,42 @@
-
 import json
+import re
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone, timedelta
 
-SPOT_API = (
-    "https://data-api.binance.vision/api/v3/ticker/24hr"
-)
+SPOT_API = "https://data-api.binance.vision/api/v3/ticker/24hr"
+FUTURES_API = "https://fapi.binance.com/fapi/v1/ticker/24hr"
 
-FUTURES_APIS = [
-    "https://fapi.binance.com/fapi/v1/ticker/24hr"
-]
-
-MIN_VOLUME = 1_000_000
-MIN_CHANGE = 5.0
+MIN_VOLUME_USDT = 1_000_000
+MIN_CHANGE_24H = 5.0
 VALID_MINUTES = 15
+MAX_SIGNALS_PER_MARKET = 20
+
 
 def get_data(url):
     request = urllib.request.Request(
         url,
-        headers={"User-Agent": "Mozilla/5.0"}
+        headers={
+            "User-Agent": "Mozilla/5.0 (compatible; CryptoSignalScanner/1.0)",
+            "Accept": "application/json",
+            "Cache-Control": "no-cache",
+        },
     )
 
     try:
         with urllib.request.urlopen(request, timeout=20) as response:
             body = response.read().decode("utf-8", errors="replace")
-
             if not body.strip():
-                raise RuntimeError(
-                    f"Empty response; HTTP status={response.status}"
-                )
-
+                raise RuntimeError(f"Empty response; HTTP status={response.status}")
             try:
                 return json.loads(body)
             except json.JSONDecodeError:
                 raise RuntimeError(
-                    f"Invalid JSON; HTTP status={response.status}; "
-                    f"body={body[:200]!r}"
+                    f"Invalid JSON; HTTP status={response.status}; body={body[:200]!r}"
                 )
-
     except urllib.error.HTTPError as error:
         body = error.read().decode("utf-8", errors="replace")
-        raise RuntimeError(
-            f"HTTP {error.code}; body={body[:200]!r}"
-        )
-
-
-def get_futures_data():
-    errors = []
-
-    for url in FUTURES_APIS:
-        try:
-            data = get_data(url)
-
-            if isinstance(data, list):
-                print("Futures data received successfully.")
-                return data, None
-
-            errors.append(url + ": unexpected response")
-
-        except Exception as error:
-            message = str(error).replace("\n", " ")
-            errors.append(url + ": " + message)
-            print("Futures endpoint unavailable:", message)
-
-    return [], " | ".join(errors)
+        raise RuntimeError(f"HTTP {error.code}; body={body[:200]!r}")
 
 
 def build_signals(data, market_type, now):
@@ -72,21 +44,20 @@ def build_signals(data, market_type, now):
 
     for coin in data:
         symbol = coin.get("symbol", "")
-
-        if not symbol.endswith("USDT"):
+        # Keep ordinary ASCII USDT pairs; ignore malformed or nonstandard symbols.
+        if not re.fullmatch(r"[A-Z0-9]+USDT", symbol):
             continue
 
         try:
             price = float(coin["lastPrice"])
             change = float(coin["priceChangePercent"])
             volume = float(coin["quoteVolume"])
-
-            if price <= 0 or volume < MIN_VOLUME:
+            if price <= 0 or volume < MIN_VOLUME_USDT:
                 continue
 
-            if change >= MIN_CHANGE:
+            if change >= MIN_CHANGE_24H:
                 direction = "BULLISH"
-            elif change <= -MIN_CHANGE:
+            elif change <= -MIN_CHANGE_24H:
                 direction = "BEARISH"
             else:
                 continue
@@ -99,66 +70,70 @@ def build_signals(data, market_type, now):
                 "volume_usdt": volume,
                 "direction": direction,
                 "created_at": now.isoformat(),
-                "expires_at": (
-                    now + timedelta(minutes=VALID_MINUTES)
-                ).isoformat(),
-                "status": "CANDIDATE_NOT_CONFIRMED"
+                "expires_at": (now + timedelta(minutes=VALID_MINUTES)).isoformat(),
+                "status": "CANDIDATE_NOT_CONFIRMED",
             })
-
         except (ValueError, KeyError, TypeError):
             continue
 
-    results.sort(
-        key=lambda item: abs(item["change_24h"]),
-        reverse=True
-    )
+    results.sort(key=lambda item: abs(item["change_24h"]), reverse=True)
+    return results[:MAX_SIGNALS_PER_MARKET]
 
-    return results[:20]
+
+def empty_report(now, status, error=None):
+    return {
+        "scan_time_utc": now.isoformat(),
+        "scanner_status": status,
+        "valid_minutes": VALID_MINUTES,
+        "signals_found": 0,
+        "spot_signals": [],
+        "futures_signals": [],
+        "futures_error": error,
+        "notice": (
+            "No fresh signals are available. Do not use older signal files "
+            "or this report as trade entries."
+        ),
+    }
 
 
 def scan_market():
     now = datetime.now(timezone.utc)
-
     print("Starting market scan:", now.isoformat())
 
     spot_data = get_data(SPOT_API)
-
     if not isinstance(spot_data, list):
         raise RuntimeError("Spot API returned an unexpected response")
+    spot_signals = build_signals(spot_data, "SPOT", now)
 
-    spot_signals = build_signals(
-        spot_data, "SPOT", now
-    )
-
-    futures_data, futures_error = get_futures_data()
-
-    futures_signals = build_signals(
-        futures_data, "FUTURES", now
-    )
+    futures_signals = []
+    futures_error = None
+    try:
+        futures_data = get_data(FUTURES_API)
+        if not isinstance(futures_data, list):
+            raise RuntimeError("Futures API returned an unexpected response")
+        futures_signals = build_signals(futures_data, "FUTURES", now)
+        print("Futures data received successfully.")
+    except Exception as error:
+        futures_error = f"{FUTURES_API}: {str(error).replace(chr(10), ' ')}"
+        print("Futures data unavailable:", futures_error)
 
     report = {
         "scan_time_utc": now.isoformat(),
+        "scanner_status": "SUCCESS",
         "valid_minutes": VALID_MINUTES,
-        "signals_found": (
-            len(spot_signals) + len(futures_signals)
-        ),
+        "signals_found": len(spot_signals) + len(futures_signals),
         "spot_signals": spot_signals,
         "futures_signals": futures_signals,
         "futures_error": futures_error,
         "notice": (
-            "These are candidates based on 24-hour price change, "
-            "not confirmed trade entries. Check live price, "
-            "trend and expiry before trading."
-        )
+            "Signals are 24-hour momentum candidates only, not confirmed entries. "
+            "Check short-term trend and current price before any trade. "
+            "Never act on signals after expires_at."
+        ),
     }
 
     with open("signals.json", "w", encoding="utf-8") as file:
-        json.dump(
-            report,
-            file,
-            ensure_ascii=False,
-            indent=2
-        )
+        json.dump(report, file, ensure_ascii=False, indent=2)
 
     print(json.dumps(report, ensure_ascii=False, indent=2))
     print("Market scan completed.")
