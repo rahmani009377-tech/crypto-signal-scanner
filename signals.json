@@ -1,146 +1,229 @@
 {
-  "scan_time_utc": "2026-10-20T06:37:12.476324+00:00",
+  "scan_time_utc": "2026-10-20T07:23:07.716430+00:00",
+  "valid_minutes": 15,
   "signals_found": 33,
-  "signals": [
+  "spot_signals": [
     {
       "symbol": "NFPUSDT",
+      "market_type": "SPOT",
       "price": 0.00181,
       "change_24h": -65.849,
       "volume_usdt": 3834192.03235,
-      "direction": "BEARISH"
+      "direction": "BEARISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
       "symbol": "VICUSDT",
+      "market_type": "SPOT",
       "price": 0.0077,
       "change_24h": -42.963,
       "volume_usdt": 1019380.606824,
-      "direction": "BEARISH"
+      "direction": "BEARISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
       "symbol": "VANRYUSDT",
+      "market_type": "SPOT",
       "price": 0.00074,
       "change_24h": -37.128,
       "volume_usdt": 2320295.244185,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "PHAUSDT",
-      "price": 0.0642,
-      "change_24h": 29.697,
-      "volume_usdt": 17063355.9035,
-      "direction": "BULLISH"
+      "direction": "BEARISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
       "symbol": "EPICUSDT",
-      "price": 0.2121,
-      "change_24h": -29.229,
-      "volume_usdt": 5324282.87877,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "SCRTUSDT",
-      "price": 0.0071,
-      "change_24h": -22.826,
-      "volume_usdt": 1502038.29646,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "OSMOUSDT",
-      "price": 0.0534,
-      "change_24h": 18.931,
-      "volume_usdt": 8066420.637099,
-      "direction": "BULLISH"
-    },
-    {
-      "symbol": "ALTUSDT",
-      "price": 0.01045,
-      "change_24h": 16.24,
-      "volume_usdt": 7170552.71322,
-      "direction": "BULLISH"
+      "market_type": "SPOT",
+      "price": 0.2053,
+      "change_24h": -30.899,
+      "volume_usdt": 5306726.21289,
+      "direction": "BEARISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
       "symbol": "GTCUSDT",
-      "price": 0.34321,
-      "change_24h": 15.563,
-      "volume_usdt": 20873687.542729,
-      "direction": "BULLISH"
+      "market_type": "SPOT",
+      "price": 0.37,
+      "change_24h": 27.021,
+      "volume_usdt": 21347654.564197,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
-      "symbol": "BATUSDT",
-      "price": 0.1987,
-      "change_24h": 12.196,
-      "volume_usdt": 5521351.2841,
-      "direction": "BULLISH"
+      "symbol": "PHAUSDT",
+      "market_type": "SPOT",
+      "price": 0.0636,
+      "change_24h": 24.219,
+      "volume_usdt": 17198402.6061,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
-      "symbol": "NILUSDT",
-      "price": 0.08595,
-      "change_24h": 12.089,
-      "volume_usdt": 8825524.287811,
-      "direction": "BULLISH"
+      "symbol": "SCRTUSDT",
+      "market_type": "SPOT",
+      "price": 0.0071,
+      "change_24h": -22.826,
+      "volume_usdt": 1502038.29646,
+      "direction": "BEARISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
-      "symbol": "AMPUSDT",
-      "price": 0.0008,
-      "change_24h": -11.308,
-      "volume_usdt": 6666428.077217,
-      "direction": "BEARISH"
+      "symbol": "ALTUSDT",
+      "market_type": "SPOT",
+      "price": 0.0104,
+      "change_24h": 17.249,
+      "volume_usdt": 7397998.17065,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
+    },
+    {
+      "symbol": "OSMOUSDT",
+      "market_type": "SPOT",
+      "price": 0.0524,
+      "change_24h": 15.165,
+      "volume_usdt": 8075166.403156,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
       "symbol": "BEAMXUSDT",
-      "price": 0.003056,
-      "change_24h": 11.168,
-      "volume_usdt": 1865706.864521,
-      "direction": "BULLISH"
+      "market_type": "SPOT",
+      "price": 0.003095,
+      "change_24h": 12.627,
+      "volume_usdt": 1920763.820913,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
+    },
+    {
+      "symbol": "NILUSDT",
+      "market_type": "SPOT",
+      "price": 0.08695,
+      "change_24h": 11.09,
+      "volume_usdt": 8721590.067357,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
+    },
+    {
+      "symbol": "AMPUSDT",
+      "market_type": "SPOT",
+      "price": 0.000804,
+      "change_24h": -10.667,
+      "volume_usdt": 6315615.555156,
+      "direction": "BEARISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
       "symbol": "METISUSDT",
-      "price": 4.12,
-      "change_24h": 10.753,
-      "volume_usdt": 1222288.9387,
-      "direction": "BULLISH"
+      "market_type": "SPOT",
+      "price": 4.09,
+      "change_24h": 9.067,
+      "volume_usdt": 1216858.24141,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
       "symbol": "KORUBUSDT",
-      "price": 11.07,
-      "change_24h": -9.485,
-      "volume_usdt": 5719750.2657,
-      "direction": "BEARISH"
+      "market_type": "SPOT",
+      "price": 11.1,
+      "change_24h": -8.867,
+      "volume_usdt": 5575481.016,
+      "direction": "BEARISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
       "symbol": "CBRSBUSDT",
-      "price": 118.83,
-      "change_24h": -9.151,
-      "volume_usdt": 1293243.84309,
-      "direction": "BEARISH"
+      "market_type": "SPOT",
+      "price": 118.5,
+      "change_24h": -8.776,
+      "volume_usdt": 1275646.76607,
+      "direction": "BEARISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
+    },
+    {
+      "symbol": "BATUSDT",
+      "market_type": "SPOT",
+      "price": 0.1953,
+      "change_24h": 8.742,
+      "volume_usdt": 5594117.6911,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
       "symbol": "WLDUSDT",
-      "price": 0.5405,
-      "change_24h": 8.469,
-      "volume_usdt": 59143790.29035,
-      "direction": "BULLISH"
+      "market_type": "SPOT",
+      "price": 0.5413,
+      "change_24h": 8.001,
+      "volume_usdt": 60350441.12202,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
+    },
+    {
+      "symbol": "AVAUSDT",
+      "market_type": "SPOT",
+      "price": 0.3876,
+      "change_24h": 7.398,
+      "volume_usdt": 8743333.53699,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
       "symbol": "SOXSBUSDT",
-      "price": 48.1,
-      "change_24h": 7.414,
-      "volume_usdt": 2756836.6645,
-      "direction": "BULLISH"
+      "market_type": "SPOT",
+      "price": 48.45,
+      "change_24h": 7.119,
+      "volume_usdt": 2683560.1857,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     },
     {
-      "symbol": "SANDUSDT",
-      "price": 0.05718,
-      "change_24h": -7.205,
-      "volume_usdt": 4022791.60877,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "KITEUSDT",
-      "price": 0.1224,
-      "change_24h": 6.62,
-      "volume_usdt": 1391711.31524,
-      "direction": "BULLISH"
+      "symbol": "BMTUSDT",
+      "market_type": "SPOT",
+      "price": 0.01772,
+      "change_24h": 6.619,
+      "volume_usdt": 1512621.427732,
+      "direction": "BULLISH",
+      "created_at": "2026-10-20T07:23:07.716430+00:00",
+      "expires_at": "2026-10-20T07:38:07.716430+00:00",
+      "status": "CANDIDATE_NOT_CONFIRMED"
     }
-  ]
+  ],
+  "futures_signals": [],
+  "notice": "Candidates use 24-hour price change only. They are not confirmed entries. Recheck live price and expiry before considering any trade."
 }
