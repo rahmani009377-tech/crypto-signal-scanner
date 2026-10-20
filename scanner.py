@@ -6,8 +6,11 @@ from datetime import datetime, timezone, timedelta
 
 SPOT_API = "https://data-api.binance.vision/api/v3/ticker/24hr"
 FUTURES_APIS = [
-    "https://fapi.binance.com/fapi/v1/ticker/24hr",
     "https://fapi1.binance.com/fapi/v1/ticker/24hr",
+    "https://fapi2.binance.com/fapi/v1/ticker/24hr",
+    "https://fapi3.binance.com/fapi/v1/ticker/24hr",
+    "https://fapi4.binance.com/fapi/v1/ticker/24hr",
+]
 ]
 MIN_VOLUME = 1_000_000
 MIN_CHANGE = 5.0
