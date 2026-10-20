@@ -9,10 +9,7 @@ SPOT_API = (
 )
 
 FUTURES_APIS = [
-    "https://fapi1.binance.com/fapi/v1/ticker/24hr",
-    "https://fapi2.binance.com/fapi/v1/ticker/24hr",
-    "https://fapi3.binance.com/fapi/v1/ticker/24hr",
-    "https://fapi4.binance.com/fapi/v1/ticker/24hr",
+    "https://fapi.binance.com/fapi/v1/ticker/24hr"
 ]
 
 MIN_VOLUME = 1_000_000
