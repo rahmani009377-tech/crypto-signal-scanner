@@ -1,6 +1,6 @@
 {
-  "scan_time_utc": "2026-10-17T14:31:20.378363+00:00",
-  "signals_found": 62,
+  "scan_time_utc": "2026-10-20T05:23:17.412980+00:00",
+  "signals_found": 33,
   "signals": [
     {
       "symbol": "NFPUSDT",
@@ -24,11 +24,18 @@
       "direction": "BEARISH"
     },
     {
-      "symbol": "EPICUSDT",
-      "price": 0.308,
-      "change_24h": 35.922,
-      "volume_usdt": 10337430.89903,
+      "symbol": "PHAUSDT",
+      "price": 0.0623,
+      "change_24h": 28.986,
+      "volume_usdt": 16224447.5782,
       "direction": "BULLISH"
+    },
+    {
+      "symbol": "EPICUSDT",
+      "price": 0.2177,
+      "change_24h": -26.799,
+      "volume_usdt": 5177690.07554,
+      "direction": "BEARISH"
     },
     {
       "symbol": "SCRTUSDT",
@@ -38,108 +45,101 @@
       "direction": "BEARISH"
     },
     {
-      "symbol": "GTCUSDT",
-      "price": 0.22893,
-      "change_24h": 20.369,
-      "volume_usdt": 9431145.738174,
+      "symbol": "OSMOUSDT",
+      "price": 0.0536,
+      "change_24h": 22.374,
+      "volume_usdt": 7979103.559511,
       "direction": "BULLISH"
     },
     {
-      "symbol": "SANDUSDT",
-      "price": 0.06412,
-      "change_24h": 16.244,
-      "volume_usdt": 11969927.59643,
+      "symbol": "ALTUSDT",
+      "price": 0.01056,
+      "change_24h": 18.386,
+      "volume_usdt": 6594177.68854,
+      "direction": "BULLISH"
+    },
+    {
+      "symbol": "NILUSDT",
+      "price": 0.08653,
+      "change_24h": 16.46,
+      "volume_usdt": 8910375.920116,
+      "direction": "BULLISH"
+    },
+    {
+      "symbol": "GTCUSDT",
+      "price": 0.33105,
+      "change_24h": 13.544,
+      "volume_usdt": 20423697.099894,
+      "direction": "BULLISH"
+    },
+    {
+      "symbol": "BEAMXUSDT",
+      "price": 0.00307,
+      "change_24h": 11.84,
+      "volume_usdt": 1860657.751597,
       "direction": "BULLISH"
     },
     {
       "symbol": "BATUSDT",
-      "price": 0.1772,
-      "change_24h": -13.939,
-      "volume_usdt": 5628988.9751,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "ERAUSDT",
-      "price": 0.0662,
-      "change_24h": 12.969,
-      "volume_usdt": 7771493.77847,
+      "price": 0.195,
+      "change_24h": 11.365,
+      "volume_usdt": 5606795.3121,
       "direction": "BULLISH"
     },
     {
-      "symbol": "ZROUSDT",
-      "price": 1.911,
-      "change_24h": -12.138,
-      "volume_usdt": 15337285.36922,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "PARTIUSDT",
-      "price": 0.029,
-      "change_24h": -11.854,
-      "volume_usdt": 1849341.93342,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "NXPCUSDT",
-      "price": 0.173,
-      "change_24h": -11.735,
-      "volume_usdt": 2446455.68525,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "STRKUSDT",
-      "price": 0.06758,
-      "change_24h": -11.695,
-      "volume_usdt": 21951381.3758132,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "AVAUSDT",
-      "price": 0.3149,
-      "change_24h": 10.919,
-      "volume_usdt": 3449563.95453,
+      "symbol": "METISUSDT",
+      "price": 4.12,
+      "change_24h": 10.753,
+      "volume_usdt": 1167734.27681,
       "direction": "BULLISH"
     },
     {
-      "symbol": "STXUSDT",
-      "price": 0.3672,
-      "change_24h": -10.657,
-      "volume_usdt": 2508687.68742,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "ZILUSDT",
-      "price": 0.002345,
-      "change_24h": -10.394,
-      "volume_usdt": 5656068.8156845,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "RLCUSDT",
-      "price": 0.7766,
-      "change_24h": -9.761,
-      "volume_usdt": 2426227.48561,
-      "direction": "BEARISH"
-    },
-    {
-      "symbol": "QUICKUSDT",
-      "price": 0.00722,
-      "change_24h": 9.726,
-      "volume_usdt": 1935365.84199,
+      "symbol": "WLDUSDT",
+      "price": 0.5417,
+      "change_24h": 10.057,
+      "volume_usdt": 56473238.77501,
       "direction": "BULLISH"
     },
     {
-      "symbol": "BERAUSDT",
-      "price": 0.1848,
-      "change_24h": -9.367,
-      "volume_usdt": 3252846.5998995,
+      "symbol": "CBRSBUSDT",
+      "price": 118.57,
+      "change_24h": -8.974,
+      "volume_usdt": 1349270.62261,
       "direction": "BEARISH"
     },
     {
-      "symbol": "ALTUSDT",
-      "price": 0.00878,
-      "change_24h": 9.068,
-      "volume_usdt": 4633881.08691,
+      "symbol": "KORUBUSDT",
+      "price": 10.93,
+      "change_24h": -8.305,
+      "volume_usdt": 5977195.292,
+      "direction": "BEARISH"
+    },
+    {
+      "symbol": "AMPUSDT",
+      "price": 0.000789,
+      "change_24h": -7.719,
+      "volume_usdt": 7795647.49388,
+      "direction": "BEARISH"
+    },
+    {
+      "symbol": "SUSDT",
+      "price": 0.05653,
+      "change_24h": 7.431,
+      "volume_usdt": 6288351.975933,
+      "direction": "BULLISH"
+    },
+    {
+      "symbol": "LUMIAUSDT",
+      "price": 0.0846,
+      "change_24h": -7.237,
+      "volume_usdt": 1374989.31897,
+      "direction": "BEARISH"
+    },
+    {
+      "symbol": "KITEUSDT",
+      "price": 0.1234,
+      "change_24h": 7.118,
+      "volume_usdt": 1369092.04646,
       "direction": "BULLISH"
     }
   ]
