@@ -1,17 +1,20 @@
 
-
 import json
 import urllib.request
+import urllib.error
 from datetime import datetime, timezone, timedelta
 
-SPOT_API = "https://data-api.binance.vision/api/v3/ticker/24hr"
+SPOT_API = (
+    "https://data-api.binance.vision/api/v3/ticker/24hr"
+)
+
 FUTURES_APIS = [
     "https://fapi1.binance.com/fapi/v1/ticker/24hr",
     "https://fapi2.binance.com/fapi/v1/ticker/24hr",
     "https://fapi3.binance.com/fapi/v1/ticker/24hr",
     "https://fapi4.binance.com/fapi/v1/ticker/24hr",
 ]
-]
+
 MIN_VOLUME = 1_000_000
 MIN_CHANGE = 5.0
 VALID_MINUTES = 15
@@ -22,20 +25,34 @@ def get_data(url):
         url,
         headers={"User-Agent": "CryptoSignalScanner/1.0"}
     )
+
     with urllib.request.urlopen(request, timeout=20) as response:
-        return json.loads(response.read().decode())
+        body = response.read().decode("utf-8")
+        return json.loads(body)
 
 
 def get_futures_data():
+    errors = []
+
     for url in FUTURES_APIS:
         try:
-            return get_data(url)
+            data = get_data(url)
+
+            if isinstance(data, list):
+                print("Futures data received successfully.")
+                return data, None
+
+            errors.append(url + ": unexpected response")
+
         except Exception as error:
-            print(f"Futures endpoint unavailable: {error}")
-    return []
+            message = str(error).replace("\n", " ")
+            errors.append(url + ": " + message)
+            print("Futures endpoint unavailable:", message)
+
+    return [], " | ".join(errors)
 
 
-def build_signals(data, market_type, now, errors):
+def build_signals(data, market_type, now):
     results = []
 
     for coin in data:
@@ -59,7 +76,6 @@ def build_signals(data, market_type, now, errors):
             else:
                 continue
 
-            # These are market-momentum candidates, not confirmed entries.
             results.append({
                 "symbol": symbol,
                 "market_type": market_type,
@@ -81,46 +97,61 @@ def build_signals(data, market_type, now, errors):
         key=lambda item: abs(item["change_24h"]),
         reverse=True
     )
-    return results
+
+    return results[:20]
 
 
 def scan_market():
     now = datetime.now(timezone.utc)
-    errors = []
 
-    try:
-        spot_data = get_data(SPOT_API)
-    except Exception as error:
-        raise RuntimeError(f"Spot market unavailable: {error}")
+    print("Starting market scan:", now.isoformat())
+
+    spot_data = get_data(SPOT_API)
+
+    if not isinstance(spot_data, list):
+        raise RuntimeError("Spot API returned an unexpected response")
 
     spot_signals = build_signals(
-        spot_data, "SPOT", now, errors
+        spot_data, "SPOT", now
     )
 
-    futures_data = get_futures_data()
+    futures_data, futures_error = get_futures_data()
+
     futures_signals = build_signals(
-        futures_data, "FUTURES", now, errors
+        futures_data, "FUTURES", now
     )
 
-    # Keep only the latest scan; do not build a backlog of old signals.
     report = {
         "scan_time_utc": now.isoformat(),
         "valid_minutes": VALID_MINUTES,
-        "signals_found": len(spot_signals) + len(futures_signals),
-        "spot_signals": spot_signals[:20],
-        "futures_signals": futures_signals[:20],
+        "signals_found": (
+            len(spot_signals) + len(futures_signals)
+        ),
+        "spot_signals": spot_signals,
+        "futures_signals": futures_signals,
+        "futures_error": futures_error,
         "notice": (
-            "Candidates use 24-hour price change only. "
-            "They are not confirmed entries. Recheck live price "
-            "and expiry before considering any trade."
+            "These are candidates based on 24-hour price change, "
+            "not confirmed trade entries. Check live price, "
+            "trend and expiry before trading."
         )
     }
 
     with open("signals.json", "w", encoding="utf-8") as file:
-        json.dump(report, file, ensure_ascii=False, indent=2)
+        json.dump(
+            report,
+            file,
+            ensure_ascii=False,
+            indent=2
+        )
 
     print(json.dumps(report, ensure_ascii=False, indent=2))
+    print("Market scan completed.")
 
 
 if __name__ == "__main__":
-    scan_market()
+    try:
+        scan_market()
+    except Exception as error:
+        print("Scanner error:", repr(error))
+        raise
