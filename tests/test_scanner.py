@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 from datetime import datetime, timezone, timedelta
 
 import scanner
@@ -45,6 +46,40 @@ class ScannerTests(unittest.TestCase):
         self.assertEqual(report["futures_signals"], [])
         self.assertEqual(report["signals_found"], 0)
         self.assertEqual(report["scanner_status"], "ERROR")
+
+
+    def test_unconfirmed_candidates_remain_visible_and_labeled(self):
+        candidates = [
+            {"symbol": f"COIN{i}USDT", "direction": "BULLISH"}
+            for i in range(9)
+        ]
+        with patch.object(
+            scanner,
+            "get_trend",
+            return_value={"direction": "BULLISH", "change_pct": 1.0},
+        ):
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+
+        self.assertEqual(results[0]["status"], "CONFIRMED_15M_1H")
+        self.assertEqual(len(confirmed), 8)
+        self.assertEqual(results[8]["status"], "CANDIDATE_NOT_CONFIRMED")
+        self.assertEqual(results[8]["confirmation_status"], "NOT_CHECKED_LIMIT")
+
+    def test_trend_mismatch_is_labeled_as_unconfirmed_candidate(self):
+        candidate = [{"symbol": "TESTUSDT", "direction": "BULLISH"}]
+        with patch.object(
+            scanner,
+            "get_trend",
+            side_effect=[
+                {"direction": "BULLISH", "change_pct": 1.0},
+                {"direction": "BEARISH", "change_pct": -1.0},
+            ],
+        ):
+            results, confirmed = scanner.confirm_spot_signals(candidate)
+
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["status"], "CANDIDATE_NOT_CONFIRMED")
+        self.assertEqual(results[0]["confirmation_status"], "NOT_CONFIRMED_15M_1H")
 
 
 if __name__ == "__main__":
