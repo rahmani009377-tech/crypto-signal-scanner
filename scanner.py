@@ -112,8 +112,11 @@ def get_trend(symbol, interval):
 def confirm_spot_signals(candidates):
     confirmed = []
     for index, signal in enumerate(candidates):
+        # Keep all market candidates visible in the dashboard, while clearly
+        # separating confirmed entries from candidates that still need review.
         if index >= 8:
-            signal["status"] = "NOT_CHECKED_LIMIT"
+            signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+            signal["confirmation_status"] = "NOT_CHECKED_LIMIT"
             continue
         try:
             trend_15m = get_trend(signal["symbol"], "15m")
@@ -125,11 +128,14 @@ def confirm_spot_signals(candidates):
                 and trend_1h["direction"] == signal["direction"]
             ):
                 signal["status"] = "CONFIRMED_15M_1H"
+                signal["confirmation_status"] = "CONFIRMED_15M_1H"
                 confirmed.append(signal)
             else:
-                signal["status"] = "NOT_CONFIRMED_15M_1H"
+                signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+                signal["confirmation_status"] = "NOT_CONFIRMED_15M_1H"
         except Exception as error:
-            signal["status"] = "NOT_CONFIRMED_DATA_UNAVAILABLE"
+            signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+            signal["confirmation_status"] = "DATA_UNAVAILABLE"
             signal["confirmation_error"] = str(error)[:160]
     return candidates, confirmed
 
