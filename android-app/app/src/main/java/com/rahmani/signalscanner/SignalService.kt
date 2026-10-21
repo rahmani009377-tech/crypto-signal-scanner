@@ -64,7 +64,7 @@ class SignalService : Service() {
                 val scanTime = root.optString("scan_time_utc")
                 val scanMillis = parseTime(scanTime)
                 val now = System.currentTimeMillis()
-                if (scanMillis <= 0L || now - scanMillis > 15 * 60 * 1000L || scanMillis > now + 2 * 60 * 1000L) {
+                if (scanMillis <= 0L || now - scanMillis > 35 * 60 * 1000L || scanMillis > now + 2 * 60 * 1000L) {
                     updateServiceNotification("گزارش قدیمی است؛ منتظر اسکن تازه")
                     return@thread
                 }
