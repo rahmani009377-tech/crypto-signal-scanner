@@ -3,6 +3,9 @@ import re
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
+
+LOCAL_TZ = ZoneInfo('Asia/Kabul')
 
 SPOT_API = "https://data-api.binance.vision/api/v3/ticker/24hr"
 SPOT_KLINES_API = "https://data-api.binance.vision/api/v3/klines"
@@ -143,6 +146,8 @@ def confirm_spot_signals(candidates):
 def empty_report(now, status, error=None):
     return {
         "scan_time_utc": now.isoformat(),
+        "scan_time_local": now.astimezone(LOCAL_TZ).isoformat(),
+        "timezone": "Asia/Kabul",
         "scanner_status": status,
         "valid_minutes": VALID_MINUTES,
         "signals_found": 0,
@@ -196,6 +201,8 @@ def scan_market():
 
     report = {
         "scan_time_utc": now.isoformat(),
+        "scan_time_local": now.astimezone(LOCAL_TZ).isoformat(),
+        "timezone": "Asia/Kabul",
         "scanner_status": "SUCCESS",
         "valid_minutes": VALID_MINUTES,
         "signals_found": len(spot_signals) + len(futures_signals),
