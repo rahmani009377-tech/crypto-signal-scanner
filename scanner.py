@@ -13,7 +13,7 @@ FUTURES_API = "https://fapi.binance.com/fapi/v1/ticker/24hr"
 
 MIN_VOLUME_USDT = 1_000_000
 MIN_CHANGE_24H = 5.0
-VALID_MINUTES = 15
+VALID_MINUTES = 35
 MAX_SIGNALS_PER_MARKET = 20
 
 
