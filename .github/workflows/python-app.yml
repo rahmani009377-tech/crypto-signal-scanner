@@ -10,7 +10,7 @@ on:
       - ".github/workflows/python-app.yml"
   schedule:
     # GitHub schedule has been delayed; use a realistic 30-minute cadence.
-    - cron: "7,37 * * * *"
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
