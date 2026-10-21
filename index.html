@@ -78,7 +78,7 @@ async function load(manual=false){
   if(!r.ok)throw new Error('HTTP '+r.status);
   const data=await r.json(); if(!data||!data.scan_time_utc)throw new Error('قالب گزارش نامعتبر است');
   report=data; const now=Date.now(); const scanned=parseTime(data.scan_time_utc); const age=scanned?Math.max(0,Math.floor((now-scanned.getTime())/60000)):99999;
-  $('updated').textContent='اسکن: '+(scanned?scanned.toLocaleTimeString('fa-IR'):'نامعلوم');
+  const localScanned=parseTime(data.scan_time_local)||scanned; $('updated').textContent='زمان اسکن کابل: '+(localScanned?localScanned.toLocaleTimeString('fa-IR',{timeZone:'Asia/Kabul'}):'نامعلوم');
   $('age').textContent=age<60?age+' دقیقه':Math.floor(age/60)+' ساعت';
   const isFresh=!!scanned&&age<15&&scanned.getTime()<=now+60000&&data.scanner_status==='SUCCESS';
   const confirmed=(isFresh?(data.spot_confirmed_signals||[]):[]).filter(s=>fresh(s,now)&&s.status==='CONFIRMED_15M_1H');
