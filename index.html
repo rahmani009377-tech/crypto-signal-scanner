@@ -30,7 +30,7 @@
 <div class="sectionHead"><h2>نامزدها (هنوز تأیید نشده)</h2><div class="tabs"><button class="tab active" data-filter="all">همه</button><button class="tab" data-filter="up">صعودی</button><button class="tab" data-filter="down">نزولی</button></div></div>
 <div id="candidates" class="cards"><div class="empty">در حال بارگذاری…</div></div>
 <div class="panel" style="margin-top:18px"><h2>وضعیت بازارها</h2><div id="futures" class="muted">در حال بررسی…</div><div class="notice">اگر دسترسی فیوچرز محدود باشد، این صفحه فقط اسپات را نشان می‌دهد. هیچ سفارش خرید یا فروشی ثبت نمی‌شود. سیگنال تأییدشده نیز تضمین سود نیست؛ قیمت و حجم فعلی را قبل از تصمیم بررسی کن.</div></div>
-<div class="foot"><span>به‌روزرسانی خودکار صفحه: هر ۶۰ ثانیه</span><a href="https://github.com/rahmani009377-tech/crypto-signal-scanner" target="_blank" rel="noopener">مخزن GitHub</a><a href="https://github.com/rahmani009377-tech/crypto-signal-scanner/blob/main/signals.json" target="_blank" rel="noopener">فایل داده خام</a></div>
+<div class="foot"><span>به‌روزرسانی خودکار صفحه: هر ۵ دقیقه</span><a href="https://github.com/rahmani009377-tech/crypto-signal-scanner" target="_blank" rel="noopener">مخزن GitHub</a><a href="https://github.com/rahmani009377-tech/crypto-signal-scanner/blob/main/signals.json" target="_blank" rel="noopener">فایل داده خام</a></div>
 </div>
 <script>
 const DATA_URL='https://raw.githubusercontent.com/rahmani009377-tech/crypto-signal-scanner/main/signals.json';
@@ -48,6 +48,16 @@ function card(s,now,confirmed){
  const sym=document.createElement('div');sym.className='symbol';sym.textContent=s.symbol||'UNKNOWN';
  const dir=document.createElement('span');dir.className='direction '+(up?'up':'down');dir.textContent=(up?'▲ صعودی':'▼ نزولی')+(confirmed?' • تأیید روند':'');
  top.append(sym,dir);div.append(top);
+ if(!confirmed && s.confirmation_status){
+  const note=document.createElement('div');note.className='expiry';
+  const reasons={
+   'NOT_CONFIRMED_15M_1H':'هنوز تأیید نشده: روند ۱۵ دقیقه و یک‌ساعت همسو نیست.',
+   'NOT_CHECKED_LIMIT':'هنوز بررسی نشده: در نوبت بررسی روند قرار نگرفته.',
+   'DATA_UNAVAILABLE':'تأیید روند ممکن نشد؛ داده را دوباره بررسی کن.'
+  };
+  note.textContent=reasons[s.confirmation_status]||'نامزد اولیه؛ قبل از معامله دوباره بررسی شود.';
+  div.append(note);
+ }
  const price=document.createElement('div');price.className='price';price.textContent=fmtNum(s.price,10)+' USDT';div.append(price);
  const metrics=document.createElement('div');metrics.className='metrics';
  [[ 'تغییر ۲۴ساعته',fmtPct(s.change_24h)],['حجم ۲۴ساعته',fmtVol(s.volume_usdt)],['روند ۱۵ دقیقه',s.trend_15m_pct==null?'بررسی نشده':fmtPct(s.trend_15m_pct)],['روند یک‌ساعت',s.trend_1h_pct==null?'بررسی نشده':fmtPct(s.trend_1h_pct)]].forEach(([k,v])=>{const m=document.createElement('div');m.className='metric';const sm=document.createElement('small');sm.textContent=k;const st=document.createElement('strong');st.textContent=v;m.append(sm,st);metrics.append(m)});div.append(metrics);
@@ -92,6 +102,6 @@ async function load(manual=false){
 $('refresh').addEventListener('click',()=>load(true));
 $('notify').addEventListener('click',async()=>{if(!('Notification'in window)){alert('این مرورگر اعلان را پشتیبانی نمی‌کند.');return;}const p=await Notification.requestPermission();$('notify').textContent=p==='granted'?'هشدار فعال است':'اجازه اعلان داده نشد';});
 document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));if(report){const now=Date.now();const scanned=parseTime(report.scan_time_utc);const valid=scanned&&now-scanned.getTime()<15*60000&&report.scanner_status==='SUCCESS';const items=(valid?report.spot_signals||[]:[]).filter(s=>fresh(s,now)&&s.status==='CANDIDATE_NOT_CONFIRMED');renderList('candidates',items.filter(s=>filter==='all'||(filter==='up'?s.direction==='BULLISH':s.direction==='BEARISH')),now,false,'فعلاً نامزد تازه‌ای در این دسته نیست.');}}));
-load();setInterval(()=>load(false),60000);
+load();setInterval(()=>load(false),300000);
 </script>
 </body></html>
