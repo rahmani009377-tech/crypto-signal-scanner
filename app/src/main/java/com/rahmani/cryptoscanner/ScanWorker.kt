@@ -30,7 +30,7 @@ object ScanScheduler {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
             .build()
-        val request = PeriodicWorkRequestBuilder<ScanWorker>(15, TimeUnit.MINUTES)
+        val request = PeriodicWorkRequestBuilder<ScanWorker>(AppPrefs.scanIntervalMinutes(context).toLong(), TimeUnit.MINUTES)
             .setConstraints(constraints)
             .build()
         manager.enqueueUniquePeriodicWork(
