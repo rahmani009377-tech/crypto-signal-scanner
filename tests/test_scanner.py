@@ -65,6 +65,52 @@ class ScannerTests(unittest.TestCase):
         self.assertEqual(results[8]["status"], "CANDIDATE_NOT_CONFIRMED")
         self.assertEqual(results[8]["confirmation_status"], "NOT_CHECKED_LIMIT")
 
+    def test_bullish_confirmed_signal_gets_valid_risk_levels(self):
+        candidate = [{
+            "symbol": "TESTUSDT",
+            "direction": "BULLISH",
+            "price": 100.0,
+        }]
+        with patch.object(
+            scanner,
+            "get_trend",
+            return_value={"direction": "BULLISH", "change_pct": 1.0, "atr": 2.0},
+        ):
+            results, confirmed = scanner.confirm_spot_signals(candidate)
+
+        self.assertEqual(len(confirmed), 1)
+        signal = confirmed[0]
+        self.assertEqual(signal["action_hint"], "SPOT_BUY_SETUP")
+        self.assertLess(signal["stop_loss"], signal["entry_price"])
+        self.assertGreater(signal["take_profit_1"], signal["entry_price"])
+        self.assertGreater(signal["take_profit_2"], signal["take_profit_1"])
+        self.assertEqual(signal["risk_reward_tp1"], "1:1.5")
+        self.assertEqual(signal["risk_reward_tp2"], "1:2")
+
+    def test_bearish_confirmed_signal_is_not_marked_as_spot_buy(self):
+        candidate = [{
+            "symbol": "TESTUSDT",
+            "direction": "BEARISH",
+            "price": 100.0,
+        }]
+        with patch.object(
+            scanner,
+            "get_trend",
+            return_value={"direction": "BEARISH", "change_pct": -1.0, "atr": 2.0},
+        ):
+            results, confirmed = scanner.confirm_spot_signals(candidate)
+
+        self.assertEqual(len(confirmed), 1)
+        self.assertEqual(
+            confirmed[0]["action_hint"],
+            "SPOT_SELL_OR_AVOID_BUY; SHORT_REQUIRES_FUTURES",
+        )
+        self.assertNotIn("stop_loss", confirmed[0])
+
+    def test_trade_plan_rejects_nonpositive_price(self):
+        with self.assertRaises(ValueError):
+            scanner.add_spot_trade_plan({"price": 0}, 1.0)
+
     def test_trend_mismatch_is_labeled_as_unconfirmed_candidate(self):
         candidate = [{"symbol": "TESTUSDT", "direction": "BULLISH"}]
         with patch.object(
