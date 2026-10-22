@@ -85,20 +85,20 @@ def build_signals(data, market_type, now):
 
 
 def get_trend(symbol, interval):
+    # Request enough candles to estimate volatility, and ignore the still-open candle.
     url = (
         f"{SPOT_KLINES_API}?symbol={symbol}"
-        f"&interval={interval}&limit=6"
+        f"&interval={interval}&limit=16"
     )
     candles = get_data(url)
     if not isinstance(candles, list) or len(candles) < 6:
         raise RuntimeError(f"Not enough {interval} candles for {symbol}")
 
-    # Drop the last candle because it may still be forming.
     closed = candles[:-1]
     old_close = float(closed[-4][4])
     previous_close = float(closed[-2][4])
     last_close = float(closed[-1][4])
-    if old_close <= 0:
+    if old_close <= 0 or previous_close <= 0 or last_close <= 0:
         raise RuntimeError(f"Invalid {interval} candle price for {symbol}")
 
     change_pct = (last_close / old_close - 1.0) * 100.0
@@ -109,7 +109,38 @@ def get_trend(symbol, interval):
     else:
         direction = "NEUTRAL"
 
-    return {"direction": direction, "change_pct": round(change_pct, 4)}
+    true_ranges = []
+    for index in range(1, len(closed)):
+        high = float(closed[index][2])
+        low = float(closed[index][3])
+        previous = float(closed[index - 1][4])
+        if high <= 0 or low <= 0 or high < low:
+            raise RuntimeError(f"Invalid {interval} candle range for {symbol}")
+        true_ranges.append(max(high - low, abs(high - previous), abs(low - previous)))
+
+    atr = sum(true_ranges[-14:]) / len(true_ranges[-14:]) if true_ranges else 0.0
+    return {
+        "direction": direction,
+        "change_pct": round(change_pct, 4),
+        "atr": atr,
+    }
+
+
+def add_spot_trade_plan(signal, atr):
+    """Attach volatility-scaled levels to a confirmed bullish spot setup."""
+    price = float(signal["price"])
+    if price <= 0:
+        raise ValueError("Signal price must be positive")
+
+    # Avoid stops that are unrealistically tight when ATR is very small.
+    risk_distance = max(float(atr or 0.0) * 1.5, price * 0.005)
+    signal["entry_price"] = round(price, 8)
+    signal["stop_loss"] = round(max(price - risk_distance, price * 0.5), 8)
+    signal["take_profit_1"] = round(price + risk_distance * 1.5, 8)
+    signal["take_profit_2"] = round(price + risk_distance * 2.0, 8)
+    signal["risk_reward_tp1"] = "1:1.5"
+    signal["risk_reward_tp2"] = "1:2"
+    signal["action_hint"] = "SPOT_BUY_SETUP"
 
 
 def confirm_spot_signals(candidates):
@@ -132,6 +163,10 @@ def confirm_spot_signals(candidates):
             ):
                 signal["status"] = "CONFIRMED_15M_1H"
                 signal["confirmation_status"] = "CONFIRMED_15M_1H"
+                if signal["direction"] == "BULLISH":
+                    add_spot_trade_plan(signal, trend_15m.get("atr", 0.0))
+                else:
+                    signal["action_hint"] = "SPOT_SELL_OR_AVOID_BUY; SHORT_REQUIRES_FUTURES"
                 confirmed.append(signal)
             else:
                 signal["status"] = "CANDIDATE_NOT_CONFIRMED"
@@ -213,9 +248,11 @@ def scan_market():
         "futures_error": futures_error,
         "notice": (
             "spot_signals are momentum candidates. Only spot_confirmed_signals "
-            "passed both closed 15-minute and 1-hour trend checks. Futures data "
-            "may be unavailable due to Binance regional restrictions. These are "
-            "still not guaranteed entries. Never act after expires_at."
+            "passed both closed 15-minute and 1-hour trend checks. Confirmed bullish "
+            "spot setups include volatility-scaled entry, stop-loss, and targets; "
+            "bearish signals are not short instructions for spot trading. Futures data "
+            "may be unavailable due to regional restrictions. Levels are estimates, "
+            "not guarantees. Never act after expires_at."
         ),
     }
 
