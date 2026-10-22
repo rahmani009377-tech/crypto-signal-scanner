@@ -9,7 +9,6 @@ LOCAL_TZ = ZoneInfo('Asia/Kabul')
 
 SPOT_API = "https://data-api.binance.vision/api/v3/ticker/24hr"
 SPOT_KLINES_API = "https://data-api.binance.vision/api/v3/klines"
-FUTURES_API = "https://fapi.binance.com/fapi/v1/ticker/24hr"
 
 MIN_VOLUME_USDT = 1_000_000
 MIN_CHANGE_24H = 5.0
@@ -186,11 +185,12 @@ def empty_report(now, status, error=None):
         "scanner_status": status,
         "valid_minutes": VALID_MINUTES,
         "signals_found": 0,
+        "confirmed_signals_found": 0,
+        "spot_confirmed_signals": [],
         "spot_signals": [],
-        "futures_signals": [],
-        "futures_error": error,
+        "error": error,
         "notice": (
-            "No fresh signals are available. Do not use older signal files "
+            "No fresh spot signals are available. Do not use older signal files "
             "or this report as trade entries."
         ),
     }
@@ -222,37 +222,23 @@ def scan_market():
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return
 
-    futures_signals = []
-    futures_error = None
-    try:
-        futures_data = get_data(FUTURES_API)
-        if not isinstance(futures_data, list):
-            raise RuntimeError("Futures API returned an unexpected response")
-        futures_signals = build_signals(futures_data, "FUTURES", now)
-        print("Futures data received successfully.")
-    except Exception as error:
-        futures_error = f"{FUTURES_API}: {str(error).replace(chr(10), ' ')}"
-        print("Futures data unavailable:", futures_error)
-
     report = {
         "scan_time_utc": now.isoformat(),
         "scan_time_local": now.astimezone(LOCAL_TZ).isoformat(),
         "timezone": "Asia/Kabul",
         "scanner_status": "SUCCESS",
         "valid_minutes": VALID_MINUTES,
-        "signals_found": len(spot_signals) + len(futures_signals),
+        "signals_found": len(spot_signals),
         "confirmed_signals_found": len(spot_confirmed),
         "spot_confirmed_signals": spot_confirmed,
         "spot_signals": spot_signals,
-        "futures_signals": futures_signals,
-        "futures_error": futures_error,
         "notice": (
-            "spot_signals are momentum candidates. Only spot_confirmed_signals "
-            "passed both closed 15-minute and 1-hour trend checks. Confirmed bullish "
-            "spot setups include volatility-scaled entry, stop-loss, and targets; "
-            "bearish signals are not short instructions for spot trading. Futures data "
-            "may be unavailable due to regional restrictions. Levels are estimates, "
-            "not guarantees. Never act after expires_at."
+            "This scanner covers Binance spot only. spot_signals are momentum "
+            "candidates. Only spot_confirmed_signals passed both closed 15-minute "
+            "and 1-hour trend checks. Confirmed bullish spot setups include "
+            "estimated entry, stop-loss, and targets. Bearish signals are not "
+            "short instructions. Levels are estimates, not guarantees. Never act "
+            "after expires_at."
         ),
     }
 
