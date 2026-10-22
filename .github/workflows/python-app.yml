@@ -32,6 +32,14 @@ jobs:
           ref: main
           fetch-depth: 0
 
+      - name: Preserve previous report for alert deduplication
+        run: |
+          if [ -f signals.json ]; then
+            cp signals.json /tmp/previous-signals.json
+          else
+            printf '{"spot_confirmed_signals":[]}' > /tmp/previous-signals.json
+          fi
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -46,6 +54,77 @@ jobs:
       - name: Validate scan report
         run: |
           python -c "import json; d=json.load(open('signals.json', encoding='utf-8')); assert d.get('scanner_status') in ('SUCCESS', 'ERROR'); assert isinstance(d.get('spot_signals'), list); assert isinstance(d.get('spot_confirmed_signals'), list); assert isinstance(d.get('confirmed_signals_found'), int); assert isinstance(d.get('valid_minutes'), int) and d['valid_minutes'] > 0; assert d.get('scan_time_utc'); print('Spot report schema valid; status:', d['scanner_status'])"
+
+      - name: Send fresh bullish spot alerts to Telegram (optional)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.parse
+          import urllib.request
+          from datetime import datetime
+
+          token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+          chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+          if not token or not chat_id:
+              print("Telegram secrets are not configured; notification skipped.")
+              raise SystemExit(0)
+
+          with open("/tmp/previous-signals.json", encoding="utf-8") as f:
+              previous = json.load(f)
+          with open("signals.json", encoding="utf-8") as f:
+              current = json.load(f)
+
+          scan_time = datetime.fromisoformat(current["scan_time_utc"])
+          old_active = set()
+          for signal in previous.get("spot_confirmed_signals", []):
+              try:
+                  expiry = datetime.fromisoformat(signal["expires_at"])
+                  if signal.get("direction") == "BULLISH" and expiry > scan_time:
+                      old_active.add((signal.get("symbol"), signal.get("direction")))
+              except (KeyError, TypeError, ValueError):
+                  continue
+
+          fresh = [
+              s for s in current.get("spot_confirmed_signals", [])
+              if s.get("direction") == "BULLISH"
+              and (s.get("symbol"), s.get("direction")) not in old_active
+          ]
+          if not fresh:
+              print("No new confirmed bullish spot signals to notify.")
+              raise SystemExit(0)
+
+          for s in fresh:
+              message = (
+                  "🟢 Fresh Binance SPOT signal\\n"
+                  f"Pair: {s.get('symbol')}\\n"
+                  f"Entry reference: {s.get('entry_price')}\\n"
+                  f"Stop loss: {s.get('stop_loss')}\\n"
+                  f"Take profit 1: {s.get('take_profit_1')}\\n"
+                  f"Take profit 2: {s.get('take_profit_2')}\\n"
+                  f"Valid until: {s.get('expires_at')}\\n"
+                  "Check the live Binance price before acting; levels are estimates."
+              )
+              data = urllib.parse.urlencode({"chat_id": chat_id, "text": message}).encode()
+              request = urllib.request.Request(
+                  f"https://api.telegram.org/bot{token}/sendMessage",
+                  data=data,
+                  headers={"Content-Type": "application/x-www-form-urlencoded"},
+                  method="POST",
+              )
+              try:
+                  with urllib.request.urlopen(request, timeout=12) as response:
+                      result = json.loads(response.read().decode("utf-8"))
+                      if not result.get("ok"):
+                          print("Telegram did not accept the alert.")
+                      else:
+                          print("Telegram alert sent for", s.get("symbol"))
+              except Exception as error:
+                  print("Telegram delivery failed:", type(error).__name__)
+          PY
 
       - name: Save fresh signals
         run: |
