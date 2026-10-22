@@ -68,6 +68,10 @@ object AppPrefs {
     fun setNotifications(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean("notifications", enabled).apply()
     }
+    fun scanIntervalMinutes(context: Context) = prefs(context).getInt("scan_interval_minutes", 15).coerceIn(15, 60)
+    fun setScanIntervalMinutes(context: Context, value: Int) {
+        prefs(context).edit().putInt("scan_interval_minutes", value.coerceIn(15, 60)).apply()
+    }
     fun minVolumeMillions(context: Context) = prefs(context).getFloat("min_volume", 1.0f)
     fun setMinVolumeMillions(context: Context, value: Float) {
         prefs(context).edit().putFloat("min_volume", value).apply()
