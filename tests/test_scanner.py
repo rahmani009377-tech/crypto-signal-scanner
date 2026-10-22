@@ -43,7 +43,8 @@ class ScannerTests(unittest.TestCase):
     def test_empty_report_does_not_publish_old_signals(self):
         report = scanner.empty_report(self.now, "ERROR", "test failure")
         self.assertEqual(report["spot_signals"], [])
-        self.assertEqual(report["futures_signals"], [])
+        self.assertEqual(report["spot_confirmed_signals"], [])
+        self.assertEqual(report["confirmed_signals_found"], 0)
         self.assertEqual(report["signals_found"], 0)
         self.assertEqual(report["scanner_status"], "ERROR")
 
