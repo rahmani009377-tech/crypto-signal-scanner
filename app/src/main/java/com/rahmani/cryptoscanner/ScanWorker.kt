@@ -49,8 +49,14 @@ class ScanWorker(context: Context, params: WorkerParameters) : Worker(context, p
         AppPrefs.saveReport(applicationContext, current)
 
         if (current.success && AppPrefs.notifications(applicationContext)) {
-            val previousSymbols = previous.signals.map { it.symbol }.toSet()
-            val fresh = current.signals.filter { it.symbol !in previousSymbols && it.expiresAt > System.currentTimeMillis() }
+            val now = System.currentTimeMillis()
+            val previousActiveSymbols = previous.signals
+                .filter { it.expiresAt > now }
+                .map { it.symbol }
+                .toSet()
+            val fresh = current.signals.filter {
+                it.expiresAt > now && it.symbol !in previousActiveSymbols
+            }
             if (fresh.isNotEmpty()) SignalNotifications.show(applicationContext, fresh)
         }
         return Result.success()
