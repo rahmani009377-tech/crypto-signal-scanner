@@ -50,7 +50,7 @@ class ScannerTests(unittest.TestCase):
 
     def test_unconfirmed_candidates_remain_visible_and_labeled(self):
         candidates = [
-            {"symbol": f"COIN{i}USDT", "direction": "BULLISH"}
+            {"symbol": f"COIN{i}USDT", "direction": "BULLISH", "price": 1.0}
             for i in range(9)
         ]
         with patch.object(
