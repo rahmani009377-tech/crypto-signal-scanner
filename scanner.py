@@ -79,7 +79,14 @@ def build_signals(data, market_type, now):
         except (ValueError, KeyError, TypeError):
             continue
 
-    results.sort(key=lambda item: abs(item["change_24h"]), reverse=True)
+    # For spot trading, prioritize bullish candidates before bearish avoid-buy context.
+    # Within each direction, sort by the magnitude of the 24-hour move.
+    results.sort(
+        key=lambda item: (
+            item["direction"] != "BULLISH",
+            -abs(item["change_24h"]),
+        )
+    )
     return results[:MAX_SIGNALS_PER_MARKET]
 
 
