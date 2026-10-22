@@ -64,7 +64,7 @@ object AppPrefs {
     fun setAutoScan(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean("auto_scan", enabled).apply()
     }
-    fun notifications(context: Context) = prefs(context).getBoolean("notifications", true)
+    fun notifications(context: Context) = prefs(context).getBoolean("notifications", false)
     fun setNotifications(context: Context, enabled: Boolean) {
         prefs(context).edit().putBoolean("notifications", enabled).apply()
     }
