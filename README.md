@@ -34,3 +34,16 @@ python -m unittest discover -s tests -v
 - No automatic orders, API keys, withdrawals, or live trading.
 - Stop-loss and target levels are volatility-based estimates. Gaps, slippage, fees, spread, and rapid moves can change realized results.
 - A large 24-hour move may already be exhausted. Confirm liquidity, current price, and expiry before considering a trade.
+
+
+## Android app
+
+The Android project is in the repository root `app/`. It provides a Persian dashboard, manual spot scan, on-device market filtering, confirmed bullish setup cards, entry/stop-loss/take-profit estimates, an in-app background-scan toggle, local-notification toggle, and adjustable 24-hour volume/change filters.
+
+### Build and install
+1. Open the repository's **Actions** page and select **Build Android APK**.
+2. Wait for the build to finish successfully.
+3. Open the completed run, scroll to **Artifacts**, and download `rahmani-crypto-scanner-debug-apk`.
+4. Extract the ZIP and install `app-debug.apk` on the Android phone.
+
+Android background scheduling is managed by WorkManager. Android may delay background work, and periodic background scans have a minimum interval of 15 minutes; exact five-minute background scans cannot be guaranteed by Android. The app reads public Binance market data and does not place orders or require Binance credentials. Signal levels are estimates, not guarantees.
