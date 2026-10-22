@@ -20,7 +20,7 @@ A free, read-only scanner for Binance spot markets only. It never places trades 
 Use only signals whose `expires_at` is still in the future. `CANDIDATE_NOT_CONFIRMED` is not a confirmed setup. Check the current Binance price before acting; a scan price may already have moved.
 
 ## Notifications
-This repository updates its report but does **not** currently send a dedicated phone push notification or Telegram message. GitHub's scheduled runs are not a guaranteed five-minute alert service. To add Telegram delivery, a user-owned bot token and chat ID must be configured securely as GitHub Actions secrets; none has been supplied, so no credentials have been invented or added.
+Optional Telegram alert delivery is built in for **new confirmed bullish spot signals only** and deduplicates signals that are still active. It safely skips delivery until both secrets are configured: `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`. Add them under **Repository → Settings → Secrets and variables → Actions → New repository secret**. Create the bot with Telegram's `@BotFather`, then obtain your chat ID. No token or chat ID was supplied, so alerts cannot be delivered yet. GitHub's scheduled runs may also start later than the requested five-minute cadence.
 
 ## Tests
 The workflow runs:
