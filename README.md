@@ -1,6 +1,6 @@
 # Binance Crypto Signal Scanner
 
-A free, read-only scanner for Binance spot markets. It never places trades and does not need Binance API keys.
+A free, read-only scanner for Binance spot markets only. It never places trades and does not need Binance API keys.
 
 ## What it does
 - GitHub Actions requests a scan every five minutes and also supports manual runs. GitHub may delay scheduled jobs, so five minutes is the requested cadence, not a guaranteed delivery interval.
@@ -9,7 +9,6 @@ A free, read-only scanner for Binance spot markets. It never places trades and d
 - Confirmed bullish setups include an indicative entry price, ATR-based stop-loss, and two profit targets (risk/reward 1:1.5 and 1:2). These are estimates from the scan snapshot, not guaranteed execution prices.
 - Confirmed bearish signals are labeled as sell/avoid-buy context for spot; they are not instructions to open a short position.
 - Writes a fresh `signals.json` report with a Kabul timestamp and 15-minute expiry. If spot data fails, it replaces the report with an explicit error and empty signal lists rather than presenting stale signals.
-- Attempts Binance Futures public data, but the official endpoint may return HTTP 451 due to regional restrictions. The error is shown in `futures_error`; spot scanning can still succeed.
 - Runs unit tests and validates the generated report on each workflow run.
 
 ## How to use
@@ -21,7 +20,7 @@ A free, read-only scanner for Binance spot markets. It never places trades and d
 Use only signals whose `expires_at` is still in the future. `CANDIDATE_NOT_CONFIRMED` is not a confirmed setup. Check the current Binance price before acting; a scan price may already have moved.
 
 ## Notifications
-This repository updates its report but does **not** currently send a dedicated phone push notification or Telegram message. GitHub's scheduled runs are not a guaranteed five-minute alert service. A notification service needs a user-owned bot/token and destination configured securely as GitHub Actions secrets; none has been supplied, so no notification credentials have been invented or added.
+This repository updates its report but does **not** currently send a dedicated phone push notification or Telegram message. GitHub's scheduled runs are not a guaranteed five-minute alert service. To add Telegram delivery, a user-owned bot token and chat ID must be configured securely as GitHub Actions secrets; none has been supplied, so no credentials have been invented or added.
 
 ## Tests
 The workflow runs:
@@ -35,4 +34,3 @@ python -m unittest discover -s tests -v
 - No automatic orders, API keys, withdrawals, or live trading.
 - Stop-loss and target levels are volatility-based estimates. Gaps, slippage, fees, spread, and rapid moves can change realized results.
 - A large 24-hour move may already be exhausted. Confirm liquidity, current price, and expiry before considering a trade.
-- Futures availability is not guaranteed from restricted locations.
