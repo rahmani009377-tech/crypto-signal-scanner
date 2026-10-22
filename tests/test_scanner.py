@@ -40,6 +40,18 @@ class ScannerTests(unittest.TestCase):
             self.now + timedelta(minutes=scanner.VALID_MINUTES),
         )
 
+    def test_bullish_spot_candidates_are_prioritized(self):
+        rows = [
+            {"symbol": "DUMPUSDT", "lastPrice": "1", "priceChangePercent": "-40", "quoteVolume": "5000000"},
+            {"symbol": "PUMPUSDT", "lastPrice": "2", "priceChangePercent": "7", "quoteVolume": "3000000"},
+            {"symbol": "RISEUSDT", "lastPrice": "3", "priceChangePercent": "5.5", "quoteVolume": "2000000"},
+        ]
+        result = scanner.build_signals(rows, "SPOT", self.now)
+        self.assertEqual(
+            [item["symbol"] for item in result],
+            ["PUMPUSDT", "RISEUSDT", "DUMPUSDT"],
+        )
+
     def test_empty_report_does_not_publish_old_signals(self):
         report = scanner.empty_report(self.now, "ERROR", "test failure")
         self.assertEqual(report["spot_signals"], [])
