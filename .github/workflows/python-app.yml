@@ -99,13 +99,13 @@ jobs:
 
           for s in fresh:
               message = (
-                  "🟢 Fresh Binance SPOT signal\\n"
-                  f"Pair: {s.get('symbol')}\\n"
-                  f"Entry reference: {s.get('entry_price')}\\n"
-                  f"Stop loss: {s.get('stop_loss')}\\n"
-                  f"Take profit 1: {s.get('take_profit_1')}\\n"
-                  f"Take profit 2: {s.get('take_profit_2')}\\n"
-                  f"Valid until: {s.get('expires_at')}\\n"
+                  "🟢 Fresh Binance SPOT signal\n"
+                  f"Pair: {s.get('symbol')}\n"
+                  f"Entry reference: {s.get('entry_price')}\n"
+                  f"Stop loss: {s.get('stop_loss')}\n"
+                  f"Take profit 1: {s.get('take_profit_1')}\n"
+                  f"Take profit 2: {s.get('take_profit_2')}\n"
+                  f"Valid until: {s.get('expires_at')}\n"
                   "Check the live Binance price before acting; levels are estimates."
               )
               data = urllib.parse.urlencode({"chat_id": chat_id, "text": message}).encode()
