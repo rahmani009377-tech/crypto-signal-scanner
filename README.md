@@ -38,7 +38,7 @@ python -m unittest discover -s tests -v
 
 ## Android app
 
-The Android project is in the repository root `app/`. It provides a Persian dashboard, manual spot scan, on-device market filtering, confirmed bullish setup cards, entry/stop-loss/take-profit estimates, an in-app background-scan toggle, local-notification toggle, and adjustable 24-hour volume/change filters.
+The Android project is in the repository root `app/`. The Android app's on-device notifications are independent of Telegram; no bot or Telegram token is required. It provides a Persian dashboard, manual spot scan, on-device market filtering, confirmed bullish setup cards, entry/stop-loss/take-profit estimates, an in-app background-scan toggle, local-notification toggle, and adjustable 24-hour volume/change filters.
 
 ### Build and install
 1. Open the repository's **Actions** page and select **Build Android APK**.
