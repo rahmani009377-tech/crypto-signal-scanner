@@ -69,6 +69,7 @@ private fun ScannerHome() {
     var report by remember { mutableStateOf(AppPrefs.loadReport(context)) }
     var scanning by remember { mutableStateOf(false) }
     var autoScan by remember { mutableStateOf(AppPrefs.autoScan(context)) }
+    var intervalMinutes by remember { mutableStateOf(AppPrefs.scanIntervalMinutes(context)) }
     var notifications by remember { mutableStateOf(AppPrefs.notifications(context)) }
     var minVolume by remember { mutableStateOf(AppPrefs.minVolumeMillions(context)) }
     var minChange by remember { mutableStateOf(AppPrefs.minChangePct(context)) }
@@ -83,6 +84,7 @@ private fun ScannerHome() {
     LaunchedEffect(Unit) {
         report = AppPrefs.loadReport(context)
         autoScan = AppPrefs.autoScan(context)
+        intervalMinutes = AppPrefs.scanIntervalMinutes(context)
         notifications = AppPrefs.notifications(context)
     }
 
@@ -137,6 +139,23 @@ private fun ScannerHome() {
                         ScanScheduler.setEnabled(context, it)
                     })
                 }
+                Text("فاصلهٔ اسکن خودکار")
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                    listOf(15, 30, 60).forEach { minutes ->
+                        Button(
+                            onClick = {
+                                intervalMinutes = minutes
+                                AppPrefs.setScanIntervalMinutes(context, minutes)
+                                if (autoScan) ScanScheduler.setEnabled(context, true)
+                            },
+                            enabled = intervalMinutes != minutes,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("$minutes دقیقه")
+                        }
+                    }
+                }
+                Text("زمان‌بندی اندروید ممکن است با تأخیر اجرا شود.", style = MaterialTheme.typography.bodySmall)
                 Divider()
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                     Column(Modifier.weight(1f)) {
