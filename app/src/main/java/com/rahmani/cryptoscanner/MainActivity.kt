@@ -41,6 +41,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -82,6 +84,13 @@ private fun ScannerHome() {
     }
 
     LaunchedEffect(Unit) {
+        report = AppPrefs.loadReport(context)
+        autoScan = AppPrefs.autoScan(context)
+        intervalMinutes = AppPrefs.scanIntervalMinutes(context)
+        notifications = AppPrefs.notifications(context)
+    }
+
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         report = AppPrefs.loadReport(context)
         autoScan = AppPrefs.autoScan(context)
         intervalMinutes = AppPrefs.scanIntervalMinutes(context)
