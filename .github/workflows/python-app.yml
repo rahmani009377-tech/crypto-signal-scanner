@@ -45,7 +45,7 @@ jobs:
 
       - name: Validate scan report
         run: |
-          python -c "import json; d=json.load(open('signals.json', encoding='utf-8')); assert d.get('scanner_status') in ('SUCCESS', 'ERROR'); assert isinstance(d.get('spot_signals'), list); assert isinstance(d.get('futures_signals'), list); assert isinstance(d.get('valid_minutes'), int) and d['valid_minutes'] > 0; assert d.get('scan_time_utc'); print('Report schema valid; status:', d['scanner_status'])"
+          python -c "import json; d=json.load(open('signals.json', encoding='utf-8')); assert d.get('scanner_status') in ('SUCCESS', 'ERROR'); assert isinstance(d.get('spot_signals'), list); assert isinstance(d.get('spot_confirmed_signals'), list); assert isinstance(d.get('confirmed_signals_found'), int); assert isinstance(d.get('valid_minutes'), int) and d['valid_minutes'] > 0; assert d.get('scan_time_utc'); print('Spot report schema valid; status:', d['scanner_status'])"
 
       - name: Save fresh signals
         run: |
