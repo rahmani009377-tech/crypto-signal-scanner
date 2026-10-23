@@ -13,7 +13,8 @@ SPOT_KLINES_API = "https://data-api.binance.vision/api/v3/klines"
 MIN_VOLUME_USDT = 1_000_000
 MIN_CHANGE_24H = 5.0
 VALID_MINUTES = 15
-MAX_SIGNALS_PER_MARKET = 20
+MAX_SIGNALS_PER_MARKET = 40
+MAX_CONFIRMED_SPOT_SIGNALS = 2
 
 
 def get_data(url):
@@ -125,14 +126,17 @@ def get_trend(symbol, interval):
         true_ranges.append(max(high - low, abs(high - previous), abs(low - previous)))
 
     atr = sum(true_ranges[-14:]) / len(true_ranges[-14:]) if true_ranges else 0.0
+    recent_highs = [float(candle[2]) for candle in closed[-12:]]
+    recent_resistance = max(recent_highs) if recent_highs else last_close
     return {
         "direction": direction,
         "change_pct": round(change_pct, 4),
         "atr": atr,
+        "recent_resistance": recent_resistance,
     }
 
 
-def add_spot_trade_plan(signal, atr):
+def add_spot_trade_plan(signal, atr, recent_resistance):
     """Attach volatility-scaled levels to a confirmed bullish spot setup."""
     price = float(signal["price"])
     if price <= 0:
@@ -144,35 +148,50 @@ def add_spot_trade_plan(signal, atr):
     signal["stop_loss"] = round(max(price - risk_distance, price * 0.5), 8)
     signal["take_profit_1"] = round(price + risk_distance * 1.5, 8)
     signal["take_profit_2"] = round(price + risk_distance * 2.0, 8)
+    resistance_distance_pct = (float(recent_resistance) / price - 1.0) * 100.0 if recent_resistance else 0.0
+    signal["recent_resistance"] = round(float(recent_resistance or 0.0), 8)
+    signal["resistance_distance_pct"] = round(resistance_distance_pct, 3)
     signal["risk_reward_tp1"] = "1:1.5"
     signal["risk_reward_tp2"] = "1:2"
     signal["action_hint"] = "SPOT_BUY_SETUP"
 
 
+def calculate_quality_score(signal, trend_15m, trend_1h):
+    """Rank confirmed bullish setups using trend, liquidity, momentum and resistance room."""
+    volume = max(float(signal.get("volume_usdt", 0.0)), 1.0)
+    volume_score = min(max((volume / 1_000_000.0) ** 0.25, 0.0), 3.0) * 5.0
+    momentum_score = min(max(float(signal.get("change_24h", 0.0)), 0.0), 15.0) * 0.8
+    short_trend_score = min(max(float(trend_15m.get("change_pct", 0.0)), 0.0), 3.0) * 4.0
+    hourly_trend_score = min(max(float(trend_1h.get("change_pct", 0.0)), 0.0), 8.0) * 1.5
+    distance = float(signal.get("resistance_distance_pct", 0.0))
+    # Penalize entries immediately beneath recent resistance; a breakout above it is not penalized.
+    resistance_penalty = max(0.0, 1.0 - distance) * 8.0 if 0.0 < distance < 1.0 else 0.0
+    return round(volume_score + momentum_score + short_trend_score + hourly_trend_score - resistance_penalty, 2)
+
+
 def confirm_spot_signals(candidates):
     confirmed = []
-    for index, signal in enumerate(candidates):
-        # Keep all market candidates visible in the dashboard, while clearly
-        # separating confirmed entries from candidates that still need review.
-        if index >= 8:
-            signal["status"] = "CANDIDATE_NOT_CONFIRMED"
-            signal["confirmation_status"] = "NOT_CHECKED_LIMIT"
-            continue
+    for signal in candidates:
+        # Check every candidate in the bounded scan list, rather than stopping after eight.
         try:
             trend_15m = get_trend(signal["symbol"], "15m")
             trend_1h = get_trend(signal["symbol"], "1h")
             signal["trend_15m_pct"] = trend_15m["change_pct"]
             signal["trend_1h_pct"] = trend_1h["change_pct"]
-            if (
-                trend_15m["direction"] == signal["direction"]
-                and trend_1h["direction"] == signal["direction"]
+            if signal["direction"] == "BULLISH" and (
+                trend_15m["direction"] == "BULLISH"
+                and trend_1h["direction"] == "BULLISH"
+                and trend_15m["change_pct"] > 0
+                and trend_1h["change_pct"] > 0
             ):
+                add_spot_trade_plan(
+                    signal,
+                    trend_15m.get("atr", 0.0),
+                    trend_15m.get("recent_resistance", 0.0),
+                )
+                signal["quality_score"] = calculate_quality_score(signal, trend_15m, trend_1h)
                 signal["status"] = "CONFIRMED_15M_1H"
                 signal["confirmation_status"] = "CONFIRMED_15M_1H"
-                if signal["direction"] == "BULLISH":
-                    add_spot_trade_plan(signal, trend_15m.get("atr", 0.0))
-                else:
-                    signal["action_hint"] = "SPOT_SELL_OR_AVOID_BUY; SHORT_REQUIRES_FUTURES"
                 confirmed.append(signal)
             else:
                 signal["status"] = "CANDIDATE_NOT_CONFIRMED"
@@ -181,7 +200,17 @@ def confirm_spot_signals(candidates):
             signal["status"] = "CANDIDATE_NOT_CONFIRMED"
             signal["confirmation_status"] = "DATA_UNAVAILABLE"
             signal["confirmation_error"] = str(error)[:160]
-    return candidates, confirmed
+
+    confirmed.sort(key=lambda item: float(item.get("quality_score", 0.0)), reverse=True)
+    selected = confirmed[:MAX_CONFIRMED_SPOT_SIGNALS]
+    for rank, signal in enumerate(selected, start=1):
+        signal["rank"] = rank
+        signal["selected_top_signal"] = True
+    for signal in confirmed[MAX_CONFIRMED_SPOT_SIGNALS:]:
+        signal["status"] = "CONFIRMED_NOT_TOP_2"
+        signal["confirmation_status"] = "CONFIRMED_NOT_TOP_2"
+        signal["selected_top_signal"] = False
+    return candidates, selected
 
 
 def empty_report(now, status, error=None):
@@ -240,12 +269,11 @@ def scan_market():
         "spot_confirmed_signals": spot_confirmed,
         "spot_signals": spot_signals,
         "notice": (
-            "This scanner covers Binance spot only. spot_signals are momentum "
-            "candidates. Only spot_confirmed_signals passed both closed 15-minute "
-            "and 1-hour trend checks. Confirmed bullish spot setups include "
-            "estimated entry, stop-loss, and targets. Bearish signals are not "
-            "short instructions. Levels are estimates, not guarantees. Never act "
-            "after expires_at."
+            "Binance spot only. Candidates are screened by 24h move and quote volume; "
+            "trend checks use closed 15m and 1h candles. spot_confirmed_signals contains "
+            "at most the two highest-scoring bullish setups. Scores rank candidates, "
+            "not guarantee outcomes. Entry/SL/TP levels are estimates, not guarantees. "
+            "Never act after expires_at."
         ),
     }
 
