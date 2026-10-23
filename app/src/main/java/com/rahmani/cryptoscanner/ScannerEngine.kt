@@ -19,7 +19,7 @@ object ScannerEngine {
         val volume: Double
     )
 
-    private data class Trend(val direction: String, val changePct: Double, val atr: Double)
+    private data class Trend(val direction: String, val changePct: Double, val atr: Double, val recentResistance: Double)
 
     fun scan(context: Context): ScanReport {
         val now = System.currentTimeMillis()
@@ -127,7 +127,13 @@ object ScannerEngine {
         }
         val recentRanges = ranges.takeLast(14)
         val atr = if (recentRanges.isEmpty()) 0.0 else recentRanges.average()
-        return Trend(direction, changePct, atr)
+        val recentStart = max(0, closedCount - 12)
+        var recentResistance = 0.0
+        for (i in recentStart until closedCount) {
+            val high = candles.getJSONArray(i).getString(2).toDouble()
+            if (high > recentResistance) recentResistance = high
+        }
+        return Trend(direction, changePct, atr, recentResistance)
     }
 
     private fun getText(address: String): String {
