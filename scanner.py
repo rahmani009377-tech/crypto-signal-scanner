@@ -61,6 +61,9 @@ def build_signals(data, market_type, now):
 
             if change >= MIN_CHANGE_24H:
                 direction = "BULLISH"
+                # Exclude extreme 24h pumps before ranking so they cannot crowd out cleaner setups.
+                if change > 30.0:
+                    continue
             elif change <= -MIN_CHANGE_24H:
                 direction = "BEARISH"
             else:
