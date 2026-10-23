@@ -178,6 +178,22 @@ def confirm_spot_signals(candidates):
             trend_1h = get_trend(signal["symbol"], "1h")
             signal["trend_15m_pct"] = trend_15m["change_pct"]
             signal["trend_1h_pct"] = trend_1h["change_pct"]
+            if signal["direction"] == "BULLISH":
+                change_24h = float(signal.get("change_24h", 0.0))
+                short_change = float(trend_15m.get("change_pct", 0.0))
+                hourly_change = float(trend_1h.get("change_pct", 0.0))
+                resistance = float(trend_15m.get("recent_resistance", 0.0))
+                price = float(signal.get("price", 0.0))
+                resistance_distance = ((resistance / price) - 1.0) * 100.0 if resistance > 0 and price > 0 else 0.0
+                # Avoid chasing extreme pumps or buying directly beneath nearby resistance.
+                if change_24h > 30.0 or short_change > 8.0 or hourly_change > 15.0:
+                    signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+                    signal["confirmation_status"] = "OVEREXTENDED_MOVE"
+                    continue
+                if 0.0 < resistance_distance < 0.5:
+                    signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+                    signal["confirmation_status"] = "RESISTANCE_TOO_CLOSE"
+                    continue
             if (
                 trend_15m["direction"] == signal["direction"]
                 and trend_1h["direction"] == signal["direction"]
