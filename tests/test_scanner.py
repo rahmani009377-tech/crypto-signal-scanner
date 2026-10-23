@@ -124,6 +124,43 @@ class ScannerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             scanner.add_spot_trade_plan({"price": 0}, 1.0)
 
+    def test_rejects_overextended_pump(self):
+        candidate = [{
+            "symbol": "PUMPUSDT",
+            "direction": "BULLISH",
+            "price": 1.0,
+            "change_24h": 35.0,
+        }]
+        with patch.object(
+            scanner,
+            "get_trend",
+            return_value={"direction": "BULLISH", "change_pct": 1.0, "atr": 0.01, "recent_resistance": 1.02},
+        ):
+            results, confirmed = scanner.confirm_spot_signals(candidate)
+
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "OVEREXTENDED_MOVE")
+
+    def test_rejects_entry_too_close_to_resistance(self):
+        candidate = [{
+            "symbol": "RESISTUSDT",
+            "direction": "BULLISH",
+            "price": 100.0,
+            "change_24h": 8.0,
+        }]
+        with patch.object(
+            scanner,
+            "get_trend",
+            side_effect=[
+                {"direction": "BULLISH", "change_pct": 1.0, "atr": 1.0, "recent_resistance": 100.3},
+                {"direction": "BULLISH", "change_pct": 2.0, "atr": 1.0, "recent_resistance": 102.0},
+            ],
+        ):
+            results, confirmed = scanner.confirm_spot_signals(candidate)
+
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "RESISTANCE_TOO_CLOSE")
+
     def test_trend_mismatch_is_labeled_as_unconfirmed_candidate(self):
         candidate = [{"symbol": "TESTUSDT", "direction": "BULLISH"}]
         with patch.object(
