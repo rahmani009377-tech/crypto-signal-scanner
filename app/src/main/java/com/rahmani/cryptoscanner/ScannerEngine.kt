@@ -49,11 +49,15 @@ object ScannerEngine {
 
             // Check up to 30 leading candidates; mobile data use will increase.
             for (candidate in ordered.take(30)) {
+                // Avoid spending API calls on an already extreme 24h pump.
+                if (candidate.change > 30.0) continue
                 try {
                     val shortTrend = trend(candidate.symbol, "15m")
                     val longTrend = trend(candidate.symbol, "1h")
                     if (shortTrend.direction != "BULLISH" || longTrend.direction != "BULLISH") continue
                     if (shortTrend.changePct <= 0.0 || longTrend.changePct <= 0.0) continue
+                    // Avoid chasing a near-vertical move that is more likely to mean-revert.
+                    if (shortTrend.changePct > 8.0 || longTrend.changePct > 15.0) continue
 
                     val resistanceDistance = (shortTrend.recentResistance / candidate.price - 1.0) * 100.0
                     if (resistanceDistance in 0.0..0.5) continue
