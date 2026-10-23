@@ -136,7 +136,7 @@ def get_trend(symbol, interval):
     }
 
 
-def add_spot_trade_plan(signal, atr, recent_resistance):
+def add_spot_trade_plan(signal, atr, recent_resistance=0.0):
     """Attach volatility-scaled levels to a confirmed bullish spot setup."""
     price = float(signal["price"])
     if price <= 0:
@@ -178,18 +178,19 @@ def confirm_spot_signals(candidates):
             trend_1h = get_trend(signal["symbol"], "1h")
             signal["trend_15m_pct"] = trend_15m["change_pct"]
             signal["trend_1h_pct"] = trend_1h["change_pct"]
-            if signal["direction"] == "BULLISH" and (
-                trend_15m["direction"] == "BULLISH"
-                and trend_1h["direction"] == "BULLISH"
-                and trend_15m["change_pct"] > 0
-                and trend_1h["change_pct"] > 0
+            if (
+                trend_15m["direction"] == signal["direction"]
+                and trend_1h["direction"] == signal["direction"]
             ):
-                add_spot_trade_plan(
-                    signal,
-                    trend_15m.get("atr", 0.0),
-                    trend_15m.get("recent_resistance", 0.0),
-                )
-                signal["quality_score"] = calculate_quality_score(signal, trend_15m, trend_1h)
+                if signal["direction"] == "BULLISH":
+                    add_spot_trade_plan(
+                        signal,
+                        trend_15m.get("atr", 0.0),
+                        trend_15m.get("recent_resistance", 0.0),
+                    )
+                    signal["quality_score"] = calculate_quality_score(signal, trend_15m, trend_1h)
+                else:
+                    signal["action_hint"] = "SPOT_SELL_OR_AVOID_BUY; SHORT_REQUIRES_FUTURES"
                 signal["status"] = "CONFIRMED_15M_1H"
                 signal["confirmation_status"] = "CONFIRMED_15M_1H"
                 confirmed.append(signal)
@@ -201,16 +202,17 @@ def confirm_spot_signals(candidates):
             signal["confirmation_status"] = "DATA_UNAVAILABLE"
             signal["confirmation_error"] = str(error)[:160]
 
-    confirmed.sort(key=lambda item: float(item.get("quality_score", 0.0)), reverse=True)
-    selected = confirmed[:MAX_CONFIRMED_SPOT_SIGNALS]
+    bullish = [item for item in confirmed if item.get("direction") == "BULLISH"]
+    bullish.sort(key=lambda item: float(item.get("quality_score", 0.0)), reverse=True)
+    selected = bullish[:MAX_CONFIRMED_SPOT_SIGNALS]
     for rank, signal in enumerate(selected, start=1):
         signal["rank"] = rank
         signal["selected_top_signal"] = True
-    for signal in confirmed[MAX_CONFIRMED_SPOT_SIGNALS:]:
+    for signal in bullish[MAX_CONFIRMED_SPOT_SIGNALS:]:
         signal["status"] = "CONFIRMED_NOT_TOP_2"
         signal["confirmation_status"] = "CONFIRMED_NOT_TOP_2"
         signal["selected_top_signal"] = False
-    return candidates, selected
+    return candidates, confirmed
 
 
 def empty_report(now, status, error=None):
@@ -241,7 +243,12 @@ def scan_market():
         if not isinstance(spot_data, list):
             raise RuntimeError("Spot API returned an unexpected response")
         spot_candidates = build_signals(spot_data, "SPOT", now)
-        spot_signals, spot_confirmed = confirm_spot_signals(spot_candidates)
+        spot_signals, all_confirmed = confirm_spot_signals(spot_candidates)
+        spot_confirmed = sorted(
+            [item for item in all_confirmed if item.get("direction") == "BULLISH"],
+            key=lambda item: float(item.get("quality_score", 0.0)),
+            reverse=True,
+        )[:MAX_CONFIRMED_SPOT_SIGNALS]
     except Exception as error:
         # Replace any old file with an explicit empty error report, never stale signals.
         report = empty_report(
