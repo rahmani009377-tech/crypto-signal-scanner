@@ -74,9 +74,9 @@ class ScannerTests(unittest.TestCase):
             results, confirmed = scanner.confirm_spot_signals(candidates)
 
         self.assertEqual(results[0]["status"], "CONFIRMED_15M_1H")
-        self.assertEqual(len(confirmed), 8)
-        self.assertEqual(results[8]["status"], "CANDIDATE_NOT_CONFIRMED")
-        self.assertEqual(results[8]["confirmation_status"], "NOT_CHECKED_LIMIT")
+        self.assertEqual(len(confirmed), 9)
+        self.assertEqual(results[8]["status"], "CONFIRMED_NOT_TOP_2")
+        self.assertEqual(results[8]["confirmation_status"], "CONFIRMED_NOT_TOP_2")
 
     def test_bullish_confirmed_signal_gets_valid_risk_levels(self):
         candidate = [{
