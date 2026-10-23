@@ -7,6 +7,7 @@ import java.net.URL
 import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.pow
 
 object ScannerEngine {
     private const val TICKER_URL = "https://data-api.binance.vision/api/v3/ticker/24hr"
@@ -44,7 +45,7 @@ object ScannerEngine {
                 compareByDescending<Candidate> { it.change }
                     .thenByDescending { it.volume }
             )
-            val confirmed = mutableListOf<SpotSignal>()
+            val ranked = mutableListOf<Pair<Double, SpotSignal>>()
 
             // Check up to 30 leading candidates; mobile data use will increase.
             for (candidate in ordered.take(30)) {
@@ -52,10 +53,13 @@ object ScannerEngine {
                     val shortTrend = trend(candidate.symbol, "15m")
                     val longTrend = trend(candidate.symbol, "1h")
                     if (shortTrend.direction != "BULLISH" || longTrend.direction != "BULLISH") continue
+                    if (shortTrend.changePct <= 0.0 || longTrend.changePct <= 0.0) continue
+
+                    val resistanceDistance = (shortTrend.recentResistance / candidate.price - 1.0) * 100.0
+                    if (resistanceDistance in 0.0..0.5) continue
 
                     val risk = max(shortTrend.atr * 1.5, candidate.price * 0.005)
-                    confirmed.add(
-                        SpotSignal(
+                    val signal = SpotSignal(
                             symbol = candidate.symbol,
                             price = candidate.price,
                             change24h = candidate.change,
@@ -70,7 +74,15 @@ object ScannerEngine {
                             createdAt = now,
                             expiresAt = now + 15 * 60 * 1000L
                         )
-                    )
+                    val volumeScore = minOf((candidate.volume / 1_000_000.0).pow(0.25), 3.0) * 5.0
+                    val momentumScore = minOf(candidate.change, 15.0) * 0.8
+                    val shortTrendScore = minOf(shortTrend.changePct, 3.0) * 4.0
+                    val hourlyTrendScore = minOf(longTrend.changePct, 8.0) * 1.5
+                    val resistancePenalty = if (resistanceDistance > 0.0 && resistanceDistance < 1.0) {
+                        (1.0 - resistanceDistance) * 8.0
+                    } else 0.0
+                    val qualityScore = volumeScore + momentumScore + shortTrendScore + hourlyTrendScore - resistancePenalty
+                    ranked.add(qualityScore to signal)
                 } catch (_: Exception) {
                     // A single unavailable pair must not cancel the rest of the scan.
                 }
@@ -80,7 +92,7 @@ object ScannerEngine {
                 success = true,
                 scannedAt = now,
                 candidateCount = candidates.size,
-                signals = confirmed.sortedByDescending { it.change24h }.take(2)
+                signals = ranked.sortedByDescending { it.first }.take(2).map { it.second }
             )
         } catch (error: Exception) {
             ScanReport(
