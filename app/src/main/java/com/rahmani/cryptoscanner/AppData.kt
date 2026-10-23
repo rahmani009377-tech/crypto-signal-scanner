@@ -14,6 +14,8 @@ data class SpotSignal(
     val stopLoss: Double,
     val takeProfit1: Double,
     val takeProfit2: Double,
+    val trend15mPct: Double,
+    val trend1hPct: Double,
     val createdAt: Long,
     val expiresAt: Long
 ) {
@@ -27,6 +29,8 @@ data class SpotSignal(
         put("stopLoss", stopLoss)
         put("takeProfit1", takeProfit1)
         put("takeProfit2", takeProfit2)
+        put("trend15mPct", trend15mPct)
+        put("trend1hPct", trend1hPct)
         put("createdAt", createdAt)
         put("expiresAt", expiresAt)
     }
@@ -42,6 +46,8 @@ data class SpotSignal(
             stopLoss = json.optDouble("stopLoss"),
             takeProfit1 = json.optDouble("takeProfit1"),
             takeProfit2 = json.optDouble("takeProfit2"),
+            trend15mPct = json.optDouble("trend15mPct", 0.0),
+            trend1hPct = json.optDouble("trend1hPct", 0.0),
             createdAt = json.optLong("createdAt"),
             expiresAt = json.optLong("expiresAt")
         )
