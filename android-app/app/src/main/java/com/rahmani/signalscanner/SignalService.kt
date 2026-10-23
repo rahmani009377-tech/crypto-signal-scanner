@@ -109,13 +109,18 @@ class SignalService : Service() {
         val direction = signal.optString("direction", "")
         val isBull = direction == "BULLISH"
         val label = if (isBull) "صعودی" else "نزولی"
-        val price = signal.optString("price", "")
+        val price = signal.optString("entry_price", signal.optString("price", ""))
+        val stop = signal.optString("stop_loss", "ثبت نشده")
+        val tp1 = signal.optString("take_profit_1", "ثبت نشده")
+        val tp2 = signal.optString("take_profit_2", "ثبت نشده")
+        val score = signal.optString("quality_score", "—")
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        val details = "$symbol | $label | ورود تقریبی: $price | حد ضرر: $stop | هدف ۱: $tp1 | هدف ۲: $tp2 | امتیاز: $score. اعتبار ۱۵ دقیقه است؛ پیش از معامله قیمت زنده را بررسی کن."
         val notification = Notification.Builder(this, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle("سیگنال تازه: $symbol")
-            .setContentText("$label | قیمت گزارش‌شده: $price")
-            .setStyle(Notification.BigTextStyle().bigText("$symbol — جهت $label. قیمت هنگام اسکن: $price. این فقط هشدار تحلیلی است؛ پیش از تصمیم قیمت فعلی و ریسک را بررسی کن."))
+            .setContentText("$label | ورود: $price | حد ضرر: $stop")
+            .setStyle(Notification.BigTextStyle().bigText(details))
             .setAutoCancel(true)
             .build()
         manager.notify((symbol + signal.optString("created_at")).hashCode(), notification)
