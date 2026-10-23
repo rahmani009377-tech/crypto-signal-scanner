@@ -40,6 +40,14 @@ class ScannerTests(unittest.TestCase):
             self.now + timedelta(minutes=scanner.VALID_MINUTES),
         )
 
+    def test_excludes_extreme_bullish_pumps_before_ranking(self):
+        rows = [
+            {"symbol": "EXTREMEUSDT", "lastPrice": "1", "priceChangePercent": "45", "quoteVolume": "9000000"},
+            {"symbol": "CLEANUSDT", "lastPrice": "1", "priceChangePercent": "12", "quoteVolume": "3000000"},
+        ]
+        result = scanner.build_signals(rows, "SPOT", self.now)
+        self.assertEqual([item["symbol"] for item in result], ["CLEANUSDT"])
+
     def test_bullish_spot_candidates_are_prioritized(self):
         rows = [
             {"symbol": "DUMPUSDT", "lastPrice": "1", "priceChangePercent": "-40", "quoteVolume": "5000000"},
