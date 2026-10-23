@@ -38,6 +38,8 @@ object ScannerEngine {
                 val change = item.optString("priceChangePercent").toDoubleOrNull() ?: continue
                 val volume = item.optString("quoteVolume").toDoubleOrNull() ?: continue
                 if (price <= 0 || volume < minVolume || change < minChange) continue
+                // Exclude extreme pumps before sorting, so they cannot occupy the 30 candle-check slots.
+                if (change > 30.0) continue
                 candidates.add(Candidate(symbol, price, change, volume))
             }
 
