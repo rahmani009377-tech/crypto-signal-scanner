@@ -65,6 +65,8 @@ object ScannerEngine {
                             stopLoss = max(candidate.price - risk, candidate.price * 0.5),
                             takeProfit1 = candidate.price + risk * 1.5,
                             takeProfit2 = candidate.price + risk * 2.0,
+                            trend15mPct = shortTrend.changePct,
+                            trend1hPct = longTrend.changePct,
                             createdAt = now,
                             expiresAt = now + 15 * 60 * 1000L
                         )

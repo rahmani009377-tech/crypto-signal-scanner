@@ -244,14 +244,27 @@ private fun SignalCard(signal: SpotSignal) {
             }
             Text("قیمت فعلی هنگام اسکن: ${formatPrice(signal.price)}")
             Text("ورود پیشنهادی: ${formatPrice(signal.entry)}")
+            Text("حجم معاملات ۲۴ ساعته: ${String.format(Locale.US, "%,.0f", signal.volumeUsdt)} USDT")
             Divider()
-            Text("حد ضرر: ${formatPrice(signal.stopLoss)}")
-            Text("حد سود ۱: ${formatPrice(signal.takeProfit1)}")
-            Text("حد سود ۲: ${formatPrice(signal.takeProfit2)}")
+            Text("روند ۱۵ دقیقه: ${formatSignedPercent(signal.trend15mPct)}")
+            Text("روند ۱ ساعت: ${formatSignedPercent(signal.trend1hPct)}")
+            Divider()
+            Text("حد ضرر: ${formatPrice(signal.stopLoss)}  (فاصله ${formatDistancePercent(signal.entry, signal.stopLoss)})")
+            Text("حد سود ۱: ${formatPrice(signal.takeProfit1)}  (هدف ${formatGainPercent(signal.entry, signal.takeProfit1)})")
+            Text("حد سود ۲: ${formatPrice(signal.takeProfit2)}  (هدف ${formatGainPercent(signal.entry, signal.takeProfit2)})")
             Text("اعتبار تا: ${formatKabulTime(signal.expiresAt)}", style = MaterialTheme.typography.bodySmall)
         }
     }
 }
+
+private fun formatSignedPercent(value: Double): String =
+    String.format(Locale.US, "%+.2f%%", value)
+
+private fun formatDistancePercent(entry: Double, stop: Double): String =
+    if (entry > 0) String.format(Locale.US, "%.2f%%", ((entry - stop) / entry) * 100.0) else "—"
+
+private fun formatGainPercent(entry: Double, target: Double): String =
+    if (entry > 0) String.format(Locale.US, "+%.2f%%", ((target - entry) / entry) * 100.0) else "—"
 
 private fun formatKabulTime(time: Long): String {
     val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US)
