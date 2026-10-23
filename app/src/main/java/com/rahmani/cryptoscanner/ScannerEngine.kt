@@ -46,8 +46,8 @@ object ScannerEngine {
             )
             val confirmed = mutableListOf<SpotSignal>()
 
-            // Limit candle checks to the strongest eight candidates to reduce mobile data use.
-            for (candidate in ordered.take(8)) {
+            // Check up to 30 leading candidates; mobile data use will increase.
+            for (candidate in ordered.take(30)) {
                 try {
                     val shortTrend = trend(candidate.symbol, "15m")
                     val longTrend = trend(candidate.symbol, "1h")
