@@ -309,6 +309,12 @@ def confirm_spot_signals(candidates):
         signal["status"] = "CONFIRMED_NOT_TOP_2"
         signal["confirmation_status"] = "CONFIRMED_NOT_TOP_2"
         signal["selected_top_signal"] = False
+    # Keep the verbose candle-by-candle payload only for actionable top picks.
+    # Other candidates retain timeframe-level summaries to keep signals.json compact.
+    for signal in candidates:
+        if signal.get("selected_top_signal") is not True:
+            for details in signal.get("timeframe_summary", {}).values():
+                details.pop("candle_analysis", None)
     return candidates, confirmed
 
 
