@@ -2,6 +2,7 @@ import json
 import re
 import urllib.request
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 
@@ -246,9 +247,15 @@ def confirm_spot_signals(candidates):
                 continue
 
             timeframe_analysis = {"15m": trend_15m, "1h": trend_1h}
-            for interval in TIMEFRAMES:
-                if interval not in timeframe_analysis:
-                    timeframe_analysis[interval] = get_trend(signal["symbol"], interval)
+            remaining_intervals = [interval for interval in TIMEFRAMES if interval not in timeframe_analysis]
+            # Fetch the six remaining intervals concurrently to keep the five-minute scan practical.
+            with ThreadPoolExecutor(max_workers=6) as executor:
+                futures = {
+                    interval: executor.submit(get_trend, signal["symbol"], interval)
+                    for interval in remaining_intervals
+                }
+                for interval, future in futures.items():
+                    timeframe_analysis[interval] = future.result()
             ordered = {tf: timeframe_analysis[tf] for tf in TIMEFRAMES}
             directions = {tf: item.get("direction", "NEUTRAL") for tf, item in ordered.items()}
             bullish_count = sum(direction == "BULLISH" for direction in directions.values())
