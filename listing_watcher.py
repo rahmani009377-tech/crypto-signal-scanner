@@ -117,7 +117,7 @@ def parse_listing_time(text):
         return None, None
     text = html.unescape(text)
     text = re.sub(r"<[^>]+>", " ", text)
-    text = re.sub(r"\\s+", " ", text)
+    text = re.sub(r"\s+", " ", text)
 
     # Prefer a date+time pair near the actual trading start wording.
     start_pos = -1
@@ -128,8 +128,8 @@ def parse_listing_time(text):
     relevant = text[start_pos:start_pos + 900] if start_pos >= 0 else text
 
     patterns = (
-        r"(20\\d{2}[-/]\\d{1,2}[-/]\\d{1,2})[ T,]+(\\d{1,2}:\\d{2}(?::\\d{2})?)\\s*(\\(\\s*UTC(?:\\s*[+-]\\s*\\d{1,2}(?::?\\d{2})?)?\\s*\\)|UTC(?:\\s*[+-]\\s*\\d{1,2}(?::?\\d{2})?)?)?",
-        r"(\\d{1,2})\\s+(January|February|March|April|May|June|July|August|September|October|November|December)\\s+(20\\d{2})[ ,]+(\\d{1,2}:\\d{2}(?::\\d{2})?)\\s*(\\(\\s*UTC(?:\\s*[+-]\\s*\\d{1,2}(?::?\\d{2})?)?\\s*\\)|UTC(?:\\s*[+-]\\s*\\d{1,2}(?::?\\d{2})?)?)?",
+        r"(20\d{2}[-/]\d{1,2}[-/]\d{1,2})[ T,]+(\d{1,2}:\d{2}(?::\d{2})?)\s*(\(\s*UTC(?:\s*[+-]\s*\d{1,2}(?::?\d{2})?)?\s*\)|UTC(?:\s*[+-]\s*\d{1,2}(?::?\d{2})?)?)?",
+        r"(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})[ ,]+(\d{1,2}:\d{2}(?::\d{2})?)\s*(\(\s*UTC(?:\s*[+-]\s*\d{1,2}(?::?\d{2})?)?\s*\)|UTC(?:\s*[+-]\s*\d{1,2}(?::?\d{2})?)?)?",
     )
     match = re.search(patterns[0], relevant, re.IGNORECASE)
     if match:
@@ -154,7 +154,7 @@ def parse_listing_time(text):
     if not zone_text or zone_text == "UTC" or zone_text == "UTC+0" or zone_text == "UTC+00:00" or zone_text == "UTC+0000":
         tz = timezone.utc
     else:
-        zone_match = re.search(r"UTC([+-])(\\d{1,2})(?::?(\\d{2}))?", zone_text)
+        zone_match = re.search(r"UTC([+-])(\d{1,2})(?::?(\d{2}))?", zone_text)
         if not zone_match:
             # Do not guess when the notice uses an unfamiliar timezone.
             return None, None
@@ -167,7 +167,7 @@ def parse_listing_time(text):
 
 
 def is_spot_listing_title(title):
-    normalized = re.sub(r"\\s+", " ", (title or "").strip()).lower()
+    normalized = re.sub(r"\s+", " ", (title or "").strip()).lower()
     if not normalized:
         return False
     # Keep actual new-asset listings; avoid futures, margin-only, Launchpool-only and pair-add notices.
@@ -227,12 +227,12 @@ def render_alert(listing, alert_code, now):
     else:
         heading = "⚡ Binance listing start-time check"
     return (
-        f"{heading}\\n"
-        f"Announcement: {listing.get('title', 'Binance listing')}\\n"
-        f"Start time (Kabul): {local_start}\\n"
-        f"Symbol(s): {', '.join(listing.get('symbols') or ['See announcement'])}\\n"
-        f"Status: {listing.get('status', 'SCHEDULED')}\\n"
-        f"Announcement: {listing.get('url')}\\n"
+        f"{heading}\n"
+        f"Announcement: {listing.get('title', 'Binance listing')}\n"
+        f"Start time (Kabul): {local_start}\n"
+        f"Symbol(s): {', '.join(listing.get('symbols') or ['See announcement'])}\n"
+        f"Status: {listing.get('status', 'SCHEDULED')}\n"
+        f"Announcement: {listing.get('url')}\n"
         "This is an alert, not a buy instruction. Verify the live spot pair, spread, liquidity and price before any trade."
     )
 
@@ -283,7 +283,7 @@ def run_listing_watcher(now=None):
             ).isoformat() if article.get("releaseDate") or article.get("publishDate") else previous.get("announced_at_utc"),
             "start_time_utc": start_utc.isoformat() if start_utc else None,
             "announced_timezone": timezone_label,
-            "symbols": sorted(set(re.findall(r"\\(([A-Z0-9]{2,15})\\)", title))),
+            "symbols": sorted(set(re.findall(r"\(([A-Z0-9]{2,15})\)", title))),
             "status": "SCHEDULED" if start_utc else "TIME_NOT_PARSED",
             "sent_alerts": previous.get("sent_alerts", []),
         }
