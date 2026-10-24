@@ -11,7 +11,7 @@ class ScannerTests(unittest.TestCase):
 
     def test_filters_non_usdt_and_non_ascii_symbols(self):
         rows = [
-            {"symbol": "BTCUSDT", "lastPrice": "100", "priceChangePercent": "6", "quoteVolume": "2000000"},
+            {"symbol": "BTCUSDT", "lastPrice": "100", "priceChangePercent": "6", "quoteVolume": "3000000"},
             {"symbol": "ETHBTC", "lastPrice": "1", "priceChangePercent": "20", "quoteVolume": "2000000"},
             {"symbol": "牛来USDT", "lastPrice": "1", "priceChangePercent": "20", "quoteVolume": "2000000"},
         ]
@@ -21,14 +21,14 @@ class ScannerTests(unittest.TestCase):
     def test_ignores_low_volume_and_small_moves(self):
         rows = [
             {"symbol": "LOWVOLUSDT", "lastPrice": "1", "priceChangePercent": "8", "quoteVolume": "999999"},
-            {"symbol": "SMALLMOVEUSDT", "lastPrice": "1", "priceChangePercent": "4.9", "quoteVolume": "5000000"},
+            {"symbol": "SMALLMOVEUSDT", "lastPrice": "1", "priceChangePercent": "2.9", "quoteVolume": "5000000"},
         ]
         self.assertEqual(scanner.build_signals(rows, "SPOT", self.now), [])
 
     def test_marks_up_and_down_candidates_and_expiry(self):
         rows = [
-            {"symbol": "UPUSDT", "lastPrice": "2", "priceChangePercent": "5", "quoteVolume": "1000000"},
-            {"symbol": "DOWNUSDT", "lastPrice": "1", "priceChangePercent": "-5.1", "quoteVolume": "1500000"},
+            {"symbol": "UPUSDT", "lastPrice": "2", "priceChangePercent": "5", "quoteVolume": "3000000"},
+            {"symbol": "DOWNUSDT", "lastPrice": "1", "priceChangePercent": "-5.1", "quoteVolume": "3500000"},
         ]
         result = scanner.build_signals(rows, "SPOT", self.now)
         by_symbol = {item["symbol"]: item for item in result}
@@ -52,7 +52,7 @@ class ScannerTests(unittest.TestCase):
         rows = [
             {"symbol": "DUMPUSDT", "lastPrice": "1", "priceChangePercent": "-40", "quoteVolume": "5000000"},
             {"symbol": "PUMPUSDT", "lastPrice": "2", "priceChangePercent": "7", "quoteVolume": "3000000"},
-            {"symbol": "RISEUSDT", "lastPrice": "3", "priceChangePercent": "5.5", "quoteVolume": "2000000"},
+            {"symbol": "RISEUSDT", "lastPrice": "3", "priceChangePercent": "5.5", "quoteVolume": "4000000"},
         ]
         result = scanner.build_signals(rows, "SPOT", self.now)
         self.assertEqual(
@@ -184,6 +184,48 @@ class ScannerTests(unittest.TestCase):
         self.assertEqual(confirmed, [])
         self.assertEqual(results[0]["status"], "CANDIDATE_NOT_CONFIRMED")
         self.assertEqual(results[0]["confirmation_status"], "NOT_CONFIRMED_15M_1H")
+
+
+    def test_rejects_setup_when_resistance_is_inside_tp1_distance(self):
+        candidate = [{
+            "symbol": "ROOMUSDT",
+            "direction": "BULLISH",
+            "price": 100.0,
+            "change_24h": 8.0,
+        }]
+        with patch.object(
+            scanner,
+            "get_trend",
+            side_effect=[
+                {"direction": "BULLISH", "change_pct": 1.0, "atr": 1.0, "recent_resistance": 101.5},
+                {"direction": "BULLISH", "change_pct": 2.0, "atr": 1.0, "recent_resistance": 103.0},
+            ],
+        ):
+            results, confirmed = scanner.confirm_spot_signals(candidate)
+
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "INSUFFICIENT_RESISTANCE_ROOM")
+
+    def test_rejects_unconfirmed_breakout_above_resistance(self):
+        candidate = [{
+            "symbol": "BREAKUSDT",
+            "direction": "BULLISH",
+            "price": 102.0,
+            "change_24h": 8.0,
+        }]
+        with patch.object(
+            scanner,
+            "get_trend",
+            side_effect=[
+                {"direction": "BULLISH", "change_pct": 1.0, "atr": 1.0, "recent_resistance": 100.0, "breakout_confirmed": False},
+                {"direction": "BULLISH", "change_pct": 2.0, "atr": 1.0, "recent_resistance": 103.0},
+            ],
+        ):
+            results, confirmed = scanner.confirm_spot_signals(candidate)
+
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "BREAKOUT_NOT_CONFIRMED")
+
 
 
 if __name__ == "__main__":
