@@ -11,7 +11,7 @@ class ScannerTests(unittest.TestCase):
 
     def test_filters_non_usdt_and_non_ascii_symbols(self):
         rows = [
-            {"symbol": "BTCUSDT", "lastPrice": "100", "priceChangePercent": "6", "quoteVolume": "2000000"},
+            {"symbol": "BTCUSDT", "lastPrice": "100", "priceChangePercent": "6", "quoteVolume": "3000000"},
             {"symbol": "ETHBTC", "lastPrice": "1", "priceChangePercent": "20", "quoteVolume": "2000000"},
             {"symbol": "牛来USDT", "lastPrice": "1", "priceChangePercent": "20", "quoteVolume": "2000000"},
         ]
@@ -21,7 +21,7 @@ class ScannerTests(unittest.TestCase):
     def test_ignores_low_volume_and_small_moves(self):
         rows = [
             {"symbol": "LOWVOLUSDT", "lastPrice": "1", "priceChangePercent": "8", "quoteVolume": "999999"},
-            {"symbol": "SMALLMOVEUSDT", "lastPrice": "1", "priceChangePercent": "4.9", "quoteVolume": "5000000"},
+            {"symbol": "SMALLMOVEUSDT", "lastPrice": "1", "priceChangePercent": "2.9", "quoteVolume": "5000000"},
         ]
         self.assertEqual(scanner.build_signals(rows, "SPOT", self.now), [])
 
