@@ -300,7 +300,6 @@ def confirm_spot_signals(candidates):
             signal["status"] = "CONFIRMED_15M_1H"
             signal["confirmation_status"] = "CONFIRMED_8_TIMEFRAMES"
             signal["max_holding_hours"] = 24
-            signal["exit_by"] = (datetime.fromisoformat(signal["created_at"]) + timedelta(hours=24)).isoformat() if signal.get("created_at") else (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
             signal["selected_top_signal"] = False
             confirmed.append(signal)
         except Exception as error:
