@@ -20,6 +20,7 @@ MAX_1H_CHANGE = 7.0
 VALID_MINUTES = 15
 MAX_SIGNALS_PER_MARKET = 30
 MAX_CONFIRMED_SPOT_SIGNALS = 2
+MAX_TOP_10_SIGNALS = 10
 TIMEFRAMES = ("15m", "30m", "1h", "2h", "4h", "8h", "12h", "1d")
 MIN_BULLISH_TIMEFRAMES = 5
 
@@ -299,6 +300,7 @@ def confirm_spot_signals(candidates):
             signal["status"] = "CONFIRMED_15M_1H"
             signal["confirmation_status"] = "CONFIRMED_8_TIMEFRAMES"
             signal["max_holding_hours"] = 24
+            signal["exit_by"] = (datetime.fromisoformat(signal["created_at"]) + timedelta(hours=24)).isoformat() if signal.get("created_at") else (datetime.now(timezone.utc) + timedelta(hours=24)).isoformat()
             signal["selected_top_signal"] = False
             confirmed.append(signal)
         except Exception as error:
@@ -336,6 +338,7 @@ def empty_report(now, status, error=None):
         "confirmed_signals_found": 0,
         "spot_confirmed_signals": [],
         "spot_signals": [],
+        "spot_top10_signals": [],
         "error": error,
         "notice": (
             "No fresh spot signals are available. Do not use older signal files "
@@ -354,6 +357,17 @@ def scan_market():
             raise RuntimeError("Spot API returned an unexpected response")
         spot_candidates = build_signals(spot_data, "SPOT", now)
         spot_candidates, all_confirmed = confirm_spot_signals(spot_candidates)
+        top10 = sorted(
+            [
+                item for item in all_confirmed
+                if item.get("direction") == "BULLISH"
+                and item.get("status") in ("CONFIRMED_15M_1H", "CONFIRMED_NOT_TOP_2")
+            ],
+            key=lambda item: float(item.get("quality_score", 0.0)),
+            reverse=True,
+        )[:MAX_TOP_10_SIGNALS]
+        for rank, item in enumerate(top10, start=1):
+            item["top10_rank"] = rank
         spot_confirmed = sorted(
             [
                 item for item in all_confirmed
@@ -389,13 +403,15 @@ def scan_market():
         "signals_found": len(spot_confirmed),
         "confirmed_signals_found": len(spot_confirmed),
         "spot_confirmed_signals": spot_confirmed,
+        "spot_top10_signals": top10,
         # Backward-compatible app field intentionally contains ONLY actionable
         # confirmed signals. Unconfirmed candidates are diagnostics, never entries.
         "spot_signals": spot_confirmed,
         "spot_candidates": spot_candidates,
         "notice": (
             "Binance spot scanner analyzes closed candles across 15m, 30m, 1h, 2h, 4h, 8h, 12h and 1d. "
-            "Only the top two confirmed bullish setups are published as actionable signals. "
+            "The ten highest-scoring confirmed bullish setups are exposed in spot_top10_signals; "
+            "the top two are published as actionable signals for Android compatibility. "
             "Bullish setups require aligned 15m/30m/1h direction, at least five bullish timeframes, "
             "higher-timeframe risk checks and sufficient resistance room. Each signal includes "
             "candle-by-candle diagnostics for the latest 12 closed candles per timeframe. "
