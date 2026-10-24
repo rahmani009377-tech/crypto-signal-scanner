@@ -31,7 +31,7 @@ jobs:
       - name: Get repository
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref }}
           fetch-depth: 0
 
       - name: Preserve previous report for alert deduplication
@@ -147,8 +147,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           for attempt in 1 2 3; do
-            git fetch origin main
-            git reset --hard origin/main
+            git fetch origin "$GITHUB_REF_NAME"
+            git reset --hard "origin/$GITHUB_REF_NAME"
             cp /tmp/signals.json signals.json
             cp /tmp/listing_report.json listing_report.json
             cp /tmp/listing_state.json listing_state.json
@@ -160,7 +160,7 @@ jobs:
             fi
 
             git commit -m "Update market signals"
-            if git push origin HEAD:main; then
+            if git push origin "HEAD:$GITHUB_REF_NAME"; then
               echo "Signals published successfully."
               exit 0
             fi
