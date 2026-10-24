@@ -364,6 +364,9 @@ if __name__ == "__main__":
     try:
         run_listing_watcher()
     except Exception as exc:
+        # Ensure the workflow can still preserve state even when the announcement API is unavailable.
+        if not STATE_FILE.exists():
+            save_json(STATE_FILE, load_state())
         now = datetime.now(timezone.utc)
         report = {
             "generated_at_utc": now.isoformat(),
