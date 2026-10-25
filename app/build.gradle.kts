@@ -9,11 +9,13 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.rahmani.cryptoscanner"
+        // Use a distinct package so the new build can be installed alongside
+        // any existing build, even if the older APK was signed differently.
+        applicationId = "com.rahmani.cryptoscanner.next"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
-        versionName = "1.0.0"
+        versionName = "1.0.1"
     }
 
     buildFeatures {
