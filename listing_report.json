@@ -1,0 +1,14 @@
+{
+  "generated_at_utc": "2026-10-25T04:09:56.314659+00:00",
+  "generated_at_local": "2026-10-25T08:39:56.314659+04:30",
+  "timezone": "Asia/Kabul",
+  "status": "SUCCESS",
+  "source": "Binance official announcement API, category 48",
+  "announcements_checked": 50,
+  "scheduled_listings_found": 0,
+  "upcoming_listings": [],
+  "alerts_due_this_run": [],
+  "warnings": [],
+  "notification_status": "TELEGRAM_SECRETS_NOT_CONFIGURED",
+  "notice": "Times are parsed from official announcement text. If no explicit trading start time can be parsed, the listing is not eligible for timed alerts. No trade is placed."
+}

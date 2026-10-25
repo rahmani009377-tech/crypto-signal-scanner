@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "listings": {
+    "1dfe10f0e0fb4e7ab0eb8874e9fdab0e": {
+      "code": "1dfe10f0e0fb4e7ab0eb8874e9fdab0e",
+      "title": "Binance Will List RWUSD and Introduce RWUSD Zero Trading Fee Promotion",
+      "url": "https://www.binance.com/en/support/announcement/1dfe10f0e0fb4e7ab0eb8874e9fdab0e",
+      "announced_at_utc": "2026-10-13T03:30:01.158000+00:00",
+      "start_time_utc": null,
+      "announced_timezone": null,
+      "symbols": [],
+      "status": "TIME_NOT_PARSED",
+      "sent_alerts": []
+    },
+    "d49de208bb6d4a26b02677d7c3d89b5d": {
+      "code": "d49de208bb6d4a26b02677d7c3d89b5d",
+      "title": "Binance Will List Hyperliquid (HYPE) with Seed Tag Applied",
+      "url": "https://www.binance.com/en/support/announcement/d49de208bb6d4a26b02677d7c3d89b5d",
+      "announced_at_utc": "2026-09-24T07:30:38.608000+00:00",
+      "start_time_utc": null,
+      "announced_timezone": null,
+      "symbols": [
+        "HYPE"
+      ],
+      "status": "TIME_NOT_PARSED",
+      "sent_alerts": []
+    },
+    "6133e417dcfe43a8ad20c0db1b53c7e8": {
+      "code": "6133e417dcfe43a8ad20c0db1b53c7e8",
+      "title": "Binance Will List 牛来 (牛来) with Seed Tag Applied",
+      "url": "https://www.binance.com/en/support/announcement/6133e417dcfe43a8ad20c0db1b53c7e8",
+      "announced_at_utc": "2026-09-09T11:30:19.513000+00:00",
+      "start_time_utc": null,
+      "announced_timezone": null,
+      "symbols": [],
+      "status": "TIME_NOT_PARSED",
+      "sent_alerts": []
+    },
+    "c2eaa763831745b2b1701dab45e20225": {
+      "code": "c2eaa763831745b2b1701dab45e20225",
+      "title": "Binance Will List MarsCoin (MARSCOIN) with Seed Tag Applied",
+      "url": "https://www.binance.com/en/support/announcement/c2eaa763831745b2b1701dab45e20225",
+      "announced_at_utc": "2026-09-04T10:15:01.870000+00:00",
+      "start_time_utc": null,
+      "announced_timezone": null,
+      "symbols": [
+        "MARSCOIN"
+      ],
+      "status": "TIME_NOT_PARSED",
+      "sent_alerts": []
+    }
+  },
+  "updated_at_utc": "2026-10-25T04:09:56.314659+00:00"
+}
