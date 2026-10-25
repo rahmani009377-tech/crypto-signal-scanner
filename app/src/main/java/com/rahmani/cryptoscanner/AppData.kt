@@ -16,6 +16,7 @@ data class SpotSignal(
     val takeProfit2: Double,
     val trend15mPct: Double,
     val trend1hPct: Double,
+    val timeframeSummary: Map<String, String> = emptyMap(),
     val createdAt: Long,
     val expiresAt: Long
 ) {
@@ -31,26 +32,41 @@ data class SpotSignal(
         put("takeProfit2", takeProfit2)
         put("trend15mPct", trend15mPct)
         put("trend1hPct", trend1hPct)
+        put("timeframeSummary", JSONObject().apply {
+            timeframeSummary.forEach { (interval, summary) -> put(interval, summary) }
+        })
         put("createdAt", createdAt)
         put("expiresAt", expiresAt)
     }
 
     companion object {
-        fun fromJson(json: JSONObject) = SpotSignal(
-            symbol = json.optString("symbol"),
-            price = json.optDouble("price"),
-            change24h = json.optDouble("change24h"),
-            volumeUsdt = json.optDouble("volumeUsdt"),
-            direction = json.optString("direction", "BULLISH"),
-            entry = json.optDouble("entry"),
-            stopLoss = json.optDouble("stopLoss"),
-            takeProfit1 = json.optDouble("takeProfit1"),
-            takeProfit2 = json.optDouble("takeProfit2"),
-            trend15mPct = json.optDouble("trend15mPct", 0.0),
-            trend1hPct = json.optDouble("trend1hPct", 0.0),
-            createdAt = json.optLong("createdAt"),
-            expiresAt = json.optLong("expiresAt")
-        )
+        fun fromJson(json: JSONObject): SpotSignal {
+            val timeframeJson = json.optJSONObject("timeframeSummary")
+            val summary = linkedMapOf<String, String>()
+            if (timeframeJson != null) {
+                val keys = timeframeJson.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    summary[key] = timeframeJson.optString(key)
+                }
+            }
+            return SpotSignal(
+                symbol = json.optString("symbol"),
+                price = json.optDouble("price"),
+                change24h = json.optDouble("change24h"),
+                volumeUsdt = json.optDouble("volumeUsdt"),
+                direction = json.optString("direction", "BULLISH"),
+                entry = json.optDouble("entry"),
+                stopLoss = json.optDouble("stopLoss"),
+                takeProfit1 = json.optDouble("takeProfit1"),
+                takeProfit2 = json.optDouble("takeProfit2"),
+                trend15mPct = json.optDouble("trend15mPct", 0.0),
+                trend1hPct = json.optDouble("trend1hPct", 0.0),
+                timeframeSummary = summary,
+                createdAt = json.optLong("createdAt"),
+                expiresAt = json.optLong("expiresAt")
+            )
+        }
     }
 }
 
