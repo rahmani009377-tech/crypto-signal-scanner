@@ -214,7 +214,7 @@ private fun ScannerHome() {
         }
 
         Text("فرصت‌های خرید تأییدشده", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text("حداکثر ۲ ارز؛ تأیید روند در کندل‌های بسته‌شدهٔ ۱۵ دقیقه و ۱ ساعت.")
+        Text("حداکثر ۲ ارز؛ بررسی کندل‌های بسته‌شده در ۸ تایم‌فریم: ۱۵د، ۳۰د، ۱س، ۲س، ۴س، ۸س، ۱۲س و ۱روز.")
         val activeSignals = report.signals.filter { it.expiresAt > System.currentTimeMillis() }
         if (!report.success) {
             Text("تا دریافت موفق داده‌ها، سیگنال قبلی نمایش داده نمی‌شود.", color = MaterialTheme.colorScheme.error)
@@ -248,6 +248,13 @@ private fun SignalCard(signal: SpotSignal) {
             Divider()
             Text("روند ۱۵ دقیقه: ${formatSignedPercent(signal.trend15mPct)}")
             Text("روند ۱ ساعت: ${formatSignedPercent(signal.trend1hPct)}")
+            if (signal.timeframeSummary.isNotEmpty()) {
+                Divider()
+                Text("بررسی ۸ تایم‌فریم", fontWeight = FontWeight.Bold)
+                signal.timeframeSummary.forEach { (interval, summary) ->
+                    Text("$interval: $summary", style = MaterialTheme.typography.bodySmall)
+                }
+            }
             Divider()
             Text("حد ضرر: ${formatPrice(signal.stopLoss)}  (فاصله ${formatDistancePercent(signal.entry, signal.stopLoss)})")
             Text("حد سود ۱: ${formatPrice(signal.takeProfit1)}  (هدف ${formatGainPercent(signal.entry, signal.takeProfit1)})")
