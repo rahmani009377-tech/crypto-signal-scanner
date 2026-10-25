@@ -296,10 +296,16 @@ def confirm_spot_signals(candidates):
                     continue
                 signal["action_hint"] = "SPOT_SELL_OR_AVOID_BUY; SHORT_REQUIRES_FUTURES"
 
-            # Keep legacy status names so the existing Android app remains compatible.
-            signal["status"] = "CONFIRMED_15M_1H"
-            signal["confirmation_status"] = "CONFIRMED_8_TIMEFRAMES"
-            signal["max_holding_hours"] = 24
+            # Preserve the legacy status only for bullish setups consumed by the Android app.
+            # A bearish trend is diagnostic/avoid-buy context, never a spot-buy confirmation.
+            if signal["direction"] == "BULLISH":
+                signal["status"] = "CONFIRMED_15M_1H"
+                signal["confirmation_status"] = "CONFIRMED_8_TIMEFRAMES"
+                signal["max_holding_hours"] = 24
+            else:
+                signal["status"] = "BEARISH_AVOID_BUY_8TF"
+                signal["confirmation_status"] = "BEARISH_AVOID_BUY_8TF"
+                signal.pop("max_holding_hours", None)
             signal["selected_top_signal"] = False
             confirmed.append(signal)
         except Exception as error:
