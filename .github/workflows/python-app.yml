@@ -4,8 +4,10 @@ on:
   push:
     branches:
       - main
+      - feature/multitimeframe-listing-alerts
     paths:
       - "scanner.py"
+      - "listing_watcher.py"
       - "tests/**"
       - ".github/workflows/python-app.yml"
   schedule:
@@ -23,13 +25,13 @@ concurrency:
 jobs:
   scan:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 8
 
     steps:
       - name: Get repository
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref }}
           fetch-depth: 0
 
       - name: Preserve previous report for alert deduplication
@@ -50,6 +52,16 @@ jobs:
 
       - name: Run scanner
         run: python scanner.py
+
+      - name: Run Binance listing watcher and scheduled alerts
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python listing_watcher.py
+
+      - name: Validate listing report
+        run: |
+          python -c "import json; d=json.load(open('listing_report.json', encoding='utf-8')); assert d.get('status') in ('SUCCESS', 'ERROR'); assert isinstance(d.get('upcoming_listings'), list); assert isinstance(d.get('alerts_due_this_run'), list); print('Listing report schema valid; status:', d['status'])"
 
       - name: Validate scan report
         run: |
@@ -129,14 +141,18 @@ jobs:
       - name: Save fresh signals
         run: |
           cp signals.json /tmp/signals.json
+          cp listing_report.json /tmp/listing_report.json
+          cp listing_state.json /tmp/listing_state.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           for attempt in 1 2 3; do
-            git fetch origin main
-            git reset --hard origin/main
+            git fetch origin "$GITHUB_REF_NAME"
+            git reset --hard "origin/$GITHUB_REF_NAME"
             cp /tmp/signals.json signals.json
-            git add signals.json
+            cp /tmp/listing_report.json listing_report.json
+            cp /tmp/listing_state.json listing_state.json
+            git add signals.json listing_report.json listing_state.json
 
             if git diff --cached --quiet; then
               echo "signals.json is unchanged; nothing to commit."
@@ -144,7 +160,7 @@ jobs:
             fi
 
             git commit -m "Update market signals"
-            if git push origin HEAD:main; then
+            if git push origin "HEAD:$GITHUB_REF_NAME"; then
               echo "Signals published successfully."
               exit 0
             fi

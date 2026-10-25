@@ -101,7 +101,7 @@ class ScannerTests(unittest.TestCase):
 
         self.assertEqual(len(confirmed), 1)
         signal = confirmed[0]
-        self.assertEqual(signal["action_hint"], "SPOT_BUY_SETUP")
+        self.assertEqual(signal["action_hint"], "SPOT_BUY_SETUP_MAX_24H_HOLD")
         self.assertLess(signal["stop_loss"], signal["entry_price"])
         self.assertGreater(signal["take_profit_1"], signal["entry_price"])
         self.assertGreater(signal["take_profit_2"], signal["take_profit_1"])
@@ -226,6 +226,40 @@ class ScannerTests(unittest.TestCase):
         self.assertEqual(confirmed, [])
         self.assertEqual(results[0]["confirmation_status"], "BREAKOUT_NOT_CONFIRMED")
 
+
+
+    def test_confirmed_spot_setup_contains_all_eight_timeframes(self):
+        candidate = [{
+            "symbol": "MULTITFUSDT",
+            "direction": "BULLISH",
+            "price": 10.0,
+            "change_24h": 6.0,
+            "volume_usdt": 5_000_000,
+        }]
+        trend = {
+            "direction": "BULLISH",
+            "change_pct": 0.5,
+            "atr": 0.1,
+            "recent_resistance": 0.0,
+            "recent_support": 9.5,
+            "volume_ratio": 1.4,
+            "breakout_confirmed": False,
+            "closed_candles_analyzed": 40,
+            "candle_analysis": [{"candle_bias": "BULLISH", "close": 10.0}],
+        }
+        with patch.object(scanner, "get_trend", return_value=trend) as mock_trend:
+            results, confirmed = scanner.confirm_spot_signals(candidate)
+
+        self.assertEqual(mock_trend.call_count, 8)
+        self.assertEqual(len(confirmed), 1)
+        signal = confirmed[0]
+        self.assertEqual(signal["confirmation_status"], "CONFIRMED_8_TIMEFRAMES")
+        self.assertEqual(signal["timeframes_checked"], 8)
+        self.assertEqual(
+            set(signal["timeframe_summary"]),
+            {"15m", "30m", "1h", "2h", "4h", "8h", "12h", "1d"},
+        )
+        self.assertIn("candle_analysis", signal["timeframe_summary"]["15m"])
 
 
 if __name__ == "__main__":
