@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feature/multitimeframe-listing-alerts
     paths:
       - "app/**"
       - "settings.gradle.kts"
