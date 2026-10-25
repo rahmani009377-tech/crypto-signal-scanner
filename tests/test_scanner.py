@@ -101,7 +101,7 @@ class ScannerTests(unittest.TestCase):
 
         self.assertEqual(len(confirmed), 1)
         signal = confirmed[0]
-        self.assertEqual(signal["action_hint"], "SPOT_BUY_SETUP")
+        self.assertEqual(signal["action_hint"], "SPOT_BUY_SETUP_MAX_24H_HOLD")
         self.assertLess(signal["stop_loss"], signal["entry_price"])
         self.assertGreater(signal["take_profit_1"], signal["entry_price"])
         self.assertGreater(signal["take_profit_2"], signal["take_profit_1"])
