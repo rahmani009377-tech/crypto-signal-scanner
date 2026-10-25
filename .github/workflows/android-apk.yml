@@ -40,6 +40,11 @@ jobs:
         with:
           gradle-version: "8.9"
 
+      - name: Check scanner source imports
+        run: |
+          grep -q '^import java.util.Locale$' app/src/main/java/com/rahmani/cryptoscanner/ScannerEngine.kt
+          echo "Locale import check passed."
+
       - name: Build debug APK
         run: gradle assembleDebug
 
