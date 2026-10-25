@@ -4,7 +4,6 @@ import android.content.Context
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.pow
@@ -12,6 +11,9 @@ import kotlin.math.pow
 object ScannerEngine {
     private const val TICKER_URL = "https://data-api.binance.vision/api/v3/ticker/24hr"
     private const val KLINES_URL = "https://data-api.binance.vision/api/v3/klines"
+    private val TIMEFRAMES = listOf("15m", "30m", "1h", "2h", "4h", "8h", "12h", "1d")
+    private const val MIN_BULLISH_TIMEFRAMES = 5
+    private const val MAX_CANDIDATES_TO_ANALYZE = 15
 
     private data class Candidate(
         val symbol: String,
@@ -20,7 +22,13 @@ object ScannerEngine {
         val volume: Double
     )
 
-    private data class Trend(val direction: String, val changePct: Double, val atr: Double, val recentResistance: Double)
+    private data class Trend(
+        val direction: String,
+        val changePct: Double,
+        val atr: Double,
+        val recentResistance: Double,
+        val recentSupport: Double
+    )
 
     fun scan(context: Context): ScanReport {
         val now = System.currentTimeMillis()
@@ -38,8 +46,8 @@ object ScannerEngine {
                 val change = item.optString("priceChangePercent").toDoubleOrNull() ?: continue
                 val volume = item.optString("quoteVolume").toDoubleOrNull() ?: continue
                 if (price <= 0 || volume < minVolume || change < minChange) continue
-                // Exclude extreme pumps before sorting, so they cannot occupy the 30 candle-check slots.
-                if (change > 30.0) continue
+                // Reject extreme pumps before spending mobile data on candle analysis.
+                if (change > 18.0) continue
                 candidates.add(Candidate(symbol, price, change, volume))
             }
 
@@ -49,48 +57,73 @@ object ScannerEngine {
             )
             val ranked = mutableListOf<Pair<Double, SpotSignal>>()
 
-            // Check up to 30 leading candidates; mobile data use will increase.
-            for (candidate in ordered.take(30)) {
-                // Avoid spending API calls on an already extreme 24h pump.
-                if (candidate.change > 30.0) continue
+            // Analyze the most liquid/active candidates across all eight closed-candle timeframes.
+            for (candidate in ordered.take(MAX_CANDIDATES_TO_ANALYZE)) {
                 try {
-                    val shortTrend = trend(candidate.symbol, "15m")
-                    val longTrend = trend(candidate.symbol, "1h")
-                    if (shortTrend.direction != "BULLISH" || longTrend.direction != "BULLISH") continue
-                    if (shortTrend.changePct <= 0.0 || longTrend.changePct <= 0.0) continue
-                    // Avoid chasing a near-vertical move that is more likely to mean-revert.
-                    if (shortTrend.changePct > 8.0 || longTrend.changePct > 15.0) continue
+                    val trends = linkedMapOf<String, Trend>()
+                    for (interval in TIMEFRAMES) {
+                        trends[interval] = trend(candidate.symbol, interval)
+                    }
 
-                    val resistanceDistance = (shortTrend.recentResistance / candidate.price - 1.0) * 100.0
-                    if (resistanceDistance in 0.0..0.5) continue
+                    val directions = trends.mapValues { it.value.direction }
+                    val bullishCount = directions.values.count { it == "BULLISH" }
+                    if (listOf("15m", "30m", "1h").any { directions[it] != "BULLISH" }) continue
+                    if (bullishCount < MIN_BULLISH_TIMEFRAMES) continue
+
+                    val higher = listOf("4h", "8h", "12h", "1d")
+                    val higherNotBearish = higher.count { directions[it] != "BEARISH" }
+                    val strongHigherBearish = higher.any {
+                        directions[it] == "BEARISH" && (trends[it]?.changePct ?: 0.0) <= -3.0
+                    }
+                    if (higherNotBearish < 2 || strongHigherBearish) continue
+
+                    val shortTrend = trends.getValue("15m")
+                    val hourlyTrend = trends.getValue("1h")
+                    val resistanceDistance = if (candidate.price > 0) {
+                        (shortTrend.recentResistance / candidate.price - 1.0) * 100.0
+                    } else 0.0
+                    if (resistanceDistance > 0.0 && resistanceDistance < 0.75) continue
 
                     val risk = max(shortTrend.atr * 1.5, candidate.price * 0.005)
+                    val target1 = candidate.price + risk * 1.5
+                    val target2 = candidate.price + risk * 2.0
+                    val target1DistancePct = (target1 / candidate.price - 1.0) * 100.0
+                    if (resistanceDistance > 0.0 && resistanceDistance <= target1DistancePct * 1.15) continue
+
+                    val summary = linkedMapOf<String, String>()
+                    for (interval in TIMEFRAMES) {
+                        val item = trends.getValue(interval)
+                        summary[interval] = "${item.direction} (${String.format(Locale.US, "%+.2f%%", item.changePct)})"
+                    }
                     val signal = SpotSignal(
-                            symbol = candidate.symbol,
-                            price = candidate.price,
-                            change24h = candidate.change,
-                            volumeUsdt = candidate.volume,
-                            direction = "BULLISH",
-                            entry = candidate.price,
-                            stopLoss = max(candidate.price - risk, candidate.price * 0.5),
-                            takeProfit1 = candidate.price + risk * 1.5,
-                            takeProfit2 = candidate.price + risk * 2.0,
-                            trend15mPct = shortTrend.changePct,
-                            trend1hPct = longTrend.changePct,
-                            createdAt = now,
-                            expiresAt = now + 15 * 60 * 1000L
-                        )
+                        symbol = candidate.symbol,
+                        price = candidate.price,
+                        change24h = candidate.change,
+                        volumeUsdt = candidate.volume,
+                        direction = "BULLISH",
+                        entry = candidate.price,
+                        stopLoss = max(candidate.price - risk, candidate.price * 0.5),
+                        takeProfit1 = target1,
+                        takeProfit2 = target2,
+                        trend15mPct = shortTrend.changePct,
+                        trend1hPct = hourlyTrend.changePct,
+                        timeframeSummary = summary,
+                        createdAt = now,
+                        expiresAt = now + 15 * 60 * 1000L
+                    )
+
                     val volumeScore = minOf((candidate.volume / 1_000_000.0).pow(0.25), 3.0) * 5.0
-                    val momentumScore = minOf(candidate.change, 15.0) * 0.8
-                    val shortTrendScore = minOf(shortTrend.changePct, 3.0) * 4.0
-                    val hourlyTrendScore = minOf(longTrend.changePct, 8.0) * 1.5
-                    val resistancePenalty = if (resistanceDistance > 0.0 && resistanceDistance < 1.0) {
-                        (1.0 - resistanceDistance) * 8.0
+                    val momentumScore = max(0.0, 12.0 - abs(candidate.change - 7.0)) * 0.65
+                    val timeframeScore = bullishCount * 3.0
+                    val shortScore = listOf("15m", "30m", "1h").sumOf {
+                        (trends.getValue(it).changePct.coerceIn(-2.0, 2.0)) * 1.2
+                    }
+                    val resistancePenalty = if (resistanceDistance > 0.0 && resistanceDistance < 1.25) {
+                        (1.25 - resistanceDistance) * 8.0
                     } else 0.0
-                    val qualityScore = volumeScore + momentumScore + shortTrendScore + hourlyTrendScore - resistancePenalty
-                    ranked.add(qualityScore to signal)
+                    ranked.add((volumeScore + momentumScore + timeframeScore + shortScore - resistancePenalty) to signal)
                 } catch (_: Exception) {
-                    // A single unavailable pair must not cancel the rest of the scan.
+                    // A single pair with missing candle data must not cancel the market scan.
                 }
             }
 
@@ -116,42 +149,49 @@ object ScannerEngine {
 
     private fun trend(symbol: String, interval: String): Trend {
         val encodedSymbol = java.net.URLEncoder.encode(symbol, "UTF-8")
-        val candles = JSONArray(
-            getText("$KLINES_URL?symbol=$encodedSymbol&interval=$interval&limit=16")
-        )
-        val closedCount = candles.length() - 1 // Ignore the candle that is still forming.
-        if (closedCount < 6) throw IllegalStateException("Not enough candles")
+        val candles = JSONArray(getText("$KLINES_URL?symbol=$encodedSymbol&interval=$interval&limit=41"))
+        val closedCount = candles.length() - 1 // Ignore the currently forming candle.
+        if (closedCount < 22) throw IllegalStateException("Not enough $interval candles")
 
-        fun closeAt(index: Int): Double =
-            candles.getJSONArray(index).getString(4).toDouble()
+        fun openAt(index: Int): Double = candles.getJSONArray(index).getString(1).toDouble()
+        fun highAt(index: Int): Double = candles.getJSONArray(index).getString(2).toDouble()
+        fun lowAt(index: Int): Double = candles.getJSONArray(index).getString(3).toDouble()
+        fun closeAt(index: Int): Double = candles.getJSONArray(index).getString(4).toDouble()
 
-        val oldClose = closeAt(closedCount - 4)
-        val previousClose = closeAt(closedCount - 2)
-        val lastClose = closeAt(closedCount - 1)
-        if (oldClose <= 0 || previousClose <= 0 || lastClose <= 0) {
+        val lastIndex = closedCount - 1
+        val lastClose = closeAt(lastIndex)
+        val previousClose = closeAt(lastIndex - 1)
+        val oldClose = closeAt(lastIndex - 3)
+        if (minOf(lastClose, previousClose, oldClose) <= 0.0) {
             throw IllegalStateException("Invalid candle price")
         }
-
         val changePct = (lastClose / oldClose - 1.0) * 100.0
-        val direction = if (lastClose > previousClose && changePct > 0) "BULLISH" else "OTHER"
+        val direction = when {
+            lastClose > previousClose && changePct > 0.0 -> "BULLISH"
+            lastClose < previousClose && changePct < 0.0 -> "BEARISH"
+            else -> "NEUTRAL"
+        }
 
         val ranges = mutableListOf<Double>()
-        for (i in 1 until closedCount) {
-            val candle = candles.getJSONArray(i)
-            val high = candle.getString(2).toDouble()
-            val low = candle.getString(3).toDouble()
+        for (i in 1..lastIndex) {
+            val high = highAt(i)
+            val low = lowAt(i)
             val previous = closeAt(i - 1)
             ranges.add(max(high - low, max(abs(high - previous), abs(low - previous))))
         }
         val recentRanges = ranges.takeLast(14)
         val atr = if (recentRanges.isEmpty()) 0.0 else recentRanges.average()
-        val recentStart = max(0, closedCount - 12)
-        var recentResistance = 0.0
-        for (i in recentStart until closedCount) {
-            val high = candles.getJSONArray(i).getString(2).toDouble()
-            if (high > recentResistance) recentResistance = high
+
+        // Resistance/support are based on the 20 closed candles before the latest closed candle.
+        val rangeStart = max(0, lastIndex - 20)
+        var resistance = 0.0
+        var support = Double.MAX_VALUE
+        for (i in rangeStart until lastIndex) {
+            resistance = max(resistance, highAt(i))
+            support = minOf(support, lowAt(i))
         }
-        return Trend(direction, changePct, atr, recentResistance)
+        if (support == Double.MAX_VALUE) support = lastClose
+        return Trend(direction, changePct, atr, resistance, support)
     }
 
     private fun getText(address: String): String {
