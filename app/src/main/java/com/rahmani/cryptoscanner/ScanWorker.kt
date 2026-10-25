@@ -76,8 +76,13 @@ object SignalNotifications {
             )
         }
 
-        val message = signals.take(2).joinToString("\n") { signal ->
-            "${signal.symbol} | ورود ${formatPrice(signal.entry)} | حدضرر ${formatPrice(signal.stopLoss)} | هدف۱ ${formatPrice(signal.takeProfit1)} | هدف۲ ${formatPrice(signal.takeProfit2)}"
+        val message = signals.take(2).joinToString("\n\n") { signal ->
+            val timeframeLine = if (signal.timeframeSummary.isNotEmpty()) {
+                "\nتأیید ۸ تایم‌فریم: " + signal.timeframeSummary.entries.joinToString("، ") { (tf, value) -> "$tf $value" }
+            } else {
+                ""
+            }
+            "${signal.symbol} | ورود ${formatPrice(signal.entry)} | حدضرر ${formatPrice(signal.stopLoss)} | هدف۱ ${formatPrice(signal.takeProfit1)} | هدف۲ ${formatPrice(signal.takeProfit2)}" + timeframeLine
         }
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
