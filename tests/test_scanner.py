@@ -126,6 +126,9 @@ class ScannerTests(unittest.TestCase):
             confirmed[0]["action_hint"],
             "SPOT_SELL_OR_AVOID_BUY; SHORT_REQUIRES_FUTURES",
         )
+        self.assertEqual(confirmed[0]["status"], "BEARISH_AVOID_BUY_8TF")
+        self.assertEqual(confirmed[0]["confirmation_status"], "BEARISH_AVOID_BUY_8TF")
+        self.assertNotIn("max_holding_hours", confirmed[0])
         self.assertNotIn("stop_loss", confirmed[0])
 
     def test_trade_plan_rejects_nonpositive_price(self):
