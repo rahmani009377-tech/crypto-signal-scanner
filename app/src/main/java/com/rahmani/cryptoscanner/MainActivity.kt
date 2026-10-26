@@ -109,6 +109,9 @@ private fun ScannerHome() {
                 Text(if (report.success) "وضعیت: آماده" else if (report.scannedAt == 0L) "هنوز اسکن نشده" else "وضعیت: خطا")
                 Text("آخرین اسکن: ${if (report.scannedAt > 0) formatKabulTime(report.scannedAt) else "—"}")
                 Text("ارزهای دارای حرکت و حجم مناسب: ${report.candidateCount}")
+                report.diagnostics?.takeIf { it.isNotBlank() }?.let { details ->
+                    Text(details, style = MaterialTheme.typography.bodySmall)
+                }
                 if (!report.success) {
                     report.error?.takeIf { it.isNotBlank() }?.let { errorMessage ->
                         Text(errorMessage, color = MaterialTheme.colorScheme.error)
