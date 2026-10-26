@@ -287,6 +287,23 @@ def confirm_spot_signals(candidates):
     return candidates, confirmed
 
 
+def summarize_candidates(candidates):
+    """Expose why candidates were rejected so zero-signal scans are diagnosable."""
+    reasons = {}
+    for item in candidates:
+        reason = item.get("confirmation_status", "NOT_CHECKED")
+        reasons[reason] = reasons.get(reason, 0) + 1
+    return {
+        "candidates_checked": len(candidates),
+        "bullish_candidates": sum(1 for item in candidates if item.get("direction") == "BULLISH"),
+        "bearish_candidates": sum(1 for item in candidates if item.get("direction") == "BEARISH"),
+        "confirmed_candidates": sum(
+            1 for item in candidates if item.get("status") == "CONFIRMED_15M_1H"
+        ),
+        "rejection_reasons": dict(sorted(reasons.items(), key=lambda pair: (-pair[1], pair[0]))),
+    }
+
+
 def empty_report(now, status, error=None):
     return {
         "scan_time_utc": now.isoformat(),
@@ -296,6 +313,7 @@ def empty_report(now, status, error=None):
         "valid_minutes": VALID_MINUTES,
         "signals_found": 0,
         "confirmed_signals_found": 0,
+        "scan_stats": summarize_candidates([]),
         "spot_confirmed_signals": [],
         "spot_signals": [],
         "error": error,
@@ -350,6 +368,7 @@ def scan_market():
         "valid_minutes": VALID_MINUTES,
         "signals_found": len(spot_confirmed),
         "confirmed_signals_found": len(spot_confirmed),
+        "scan_stats": summarize_candidates(spot_candidates),
         "spot_confirmed_signals": spot_confirmed,
         # Backward-compatible app field intentionally contains ONLY actionable
         # confirmed signals. Unconfirmed candidates are diagnostics, never entries.
