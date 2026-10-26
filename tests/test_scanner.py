@@ -244,5 +244,23 @@ class ScannerTests(unittest.TestCase):
         self.assertEqual(stats["rejection_reasons"]["INSUFFICIENT_RESISTANCE_ROOM"], 1)
 
 
+    def test_signal_state_distinguishes_no_buy_from_bearish_context(self):
+        candidates = [
+            {"direction": "BULLISH", "confirmation_status": "INSUFFICIENT_RESISTANCE_ROOM"},
+            {"direction": "BEARISH", "confirmation_status": "CONFIRMED_15M_1H"},
+        ]
+        state = scanner.summarize_signal_state(candidates, [])
+        self.assertEqual(state["actionable_spot_buy_count"], 0)
+        self.assertEqual(state["confirmed_bearish_context_count"], 1)
+        self.assertEqual(state["bullish_candidates_rejected"], 1)
+        self.assertEqual(state["buy_signal_state"], "NO_CONFIRMED_SPOT_BUY_SETUP")
+
+    def test_signal_state_marks_available_actionable_buy(self):
+        actionable = [{"symbol": "TESTUSDT", "direction": "BULLISH"}]
+        state = scanner.summarize_signal_state(actionable, actionable)
+        self.assertEqual(state["actionable_spot_buy_count"], 1)
+        self.assertEqual(state["buy_signal_state"], "ACTIONABLE_BUY_SETUPS_AVAILABLE")
+
+
 if __name__ == "__main__":
     unittest.main()
