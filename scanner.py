@@ -304,6 +304,36 @@ def summarize_candidates(candidates):
     }
 
 
+def summarize_signal_state(candidates, actionable):
+    """Separate actionable spot buys from bearish context and rejected candidates."""
+    bullish = [item for item in candidates if item.get("direction") == "BULLISH"]
+    bearish_confirmed = [
+        item for item in candidates
+        if item.get("direction") == "BEARISH"
+        and item.get("confirmation_status") == "CONFIRMED_15M_1H"
+    ]
+    rejected_bullish = [
+        item for item in bullish
+        if item.get("confirmation_status") != "CONFIRMED_15M_1H"
+    ]
+    rejection_counts = {}
+    for item in rejected_bullish:
+        reason = item.get("confirmation_status", "NOT_CHECKED")
+        rejection_counts[reason] = rejection_counts.get(reason, 0) + 1
+    return {
+        "actionable_spot_buy_count": len(actionable),
+        "confirmed_bearish_context_count": len(bearish_confirmed),
+        "bullish_candidates_rejected": len(rejected_bullish),
+        "bullish_rejection_reasons": dict(sorted(
+            rejection_counts.items(), key=lambda pair: (-pair[1], pair[0])
+        )),
+        "buy_signal_state": (
+            "ACTIONABLE_BUY_SETUPS_AVAILABLE" if actionable
+            else "NO_CONFIRMED_SPOT_BUY_SETUP"
+        ),
+    }
+
+
 def empty_report(now, status, error=None):
     return {
         "scan_time_utc": now.isoformat(),
@@ -314,6 +344,7 @@ def empty_report(now, status, error=None):
         "signals_found": 0,
         "confirmed_signals_found": 0,
         "scan_stats": summarize_candidates([]),
+        "signal_state": summarize_signal_state([], []),
         "spot_confirmed_signals": [],
         "spot_signals": [],
         "error": error,
@@ -369,6 +400,7 @@ def scan_market():
         "signals_found": len(spot_confirmed),
         "confirmed_signals_found": len(spot_confirmed),
         "scan_stats": summarize_candidates(spot_candidates),
+        "signal_state": summarize_signal_state(spot_candidates, spot_confirmed),
         "spot_confirmed_signals": spot_confirmed,
         # Backward-compatible app field intentionally contains ONLY actionable
         # confirmed signals. Unconfirmed candidates are diagnostics, never entries.
