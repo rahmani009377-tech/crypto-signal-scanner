@@ -228,5 +228,21 @@ class ScannerTests(unittest.TestCase):
 
 
 
+    def test_scan_stats_explain_zero_signal_candidates(self):
+        stats = scanner.summarize_candidates([
+            {"direction": "BULLISH", "status": "CANDIDATE_NOT_CONFIRMED",
+             "confirmation_status": "INSUFFICIENT_RESISTANCE_ROOM"},
+            {"direction": "BULLISH", "status": "CANDIDATE_NOT_CONFIRMED",
+             "confirmation_status": "NOT_CONFIRMED_15M_1H"},
+            {"direction": "BEARISH", "status": "CONFIRMED_15M_1H",
+             "confirmation_status": "CONFIRMED_15M_1H"},
+        ])
+        self.assertEqual(stats["candidates_checked"], 3)
+        self.assertEqual(stats["bullish_candidates"], 2)
+        self.assertEqual(stats["bearish_candidates"], 1)
+        self.assertEqual(stats["confirmed_candidates"], 1)
+        self.assertEqual(stats["rejection_reasons"]["INSUFFICIENT_RESISTANCE_ROOM"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
