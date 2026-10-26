@@ -20,7 +20,13 @@ object ScannerEngine {
         val volume: Double
     )
 
-    private data class Trend(val direction: String, val changePct: Double, val atr: Double, val recentResistance: Double)
+    private data class Trend(
+        val direction: String,
+        val changePct: Double,
+        val atr: Double,
+        val recentResistance: Double,
+        val breakoutConfirmed: Boolean
+    )
 
     fun scan(context: Context): ScanReport {
         val now = System.currentTimeMillis()
@@ -48,42 +54,71 @@ object ScannerEngine {
                     .thenByDescending { it.volume }
             )
             val ranked = mutableListOf<Pair<Double, SpotSignal>>()
+            val rejectionCounts = linkedMapOf<String, Int>()
+            var checkedCandidates = 0
+
+            fun reject(reason: String) {
+                rejectionCounts[reason] = (rejectionCounts[reason] ?: 0) + 1
+            }
 
             // Check up to 30 leading candidates; mobile data use will increase.
             for (candidate in ordered.take(30)) {
-                // Avoid spending API calls on an already extreme 24h pump.
-                if (candidate.change > 30.0) continue
+                checkedCandidates++
                 try {
                     val shortTrend = trend(candidate.symbol, "15m")
                     val longTrend = trend(candidate.symbol, "1h")
-                    if (shortTrend.direction != "BULLISH" || longTrend.direction != "BULLISH") continue
-                    if (shortTrend.changePct <= 0.0 || longTrend.changePct <= 0.0) continue
+                    if (shortTrend.direction != "BULLISH" || longTrend.direction != "BULLISH") {
+                        reject("روند ۱۵ دقیقه و ۱ ساعت هم‌جهت نیست")
+                        continue
+                    }
+                    if (shortTrend.changePct <= 0.0 || longTrend.changePct <= 0.0) {
+                        reject("شتاب مثبت تأیید نشد")
+                        continue
+                    }
                     // Avoid chasing a near-vertical move that is more likely to mean-revert.
-                    if (shortTrend.changePct > 8.0 || longTrend.changePct > 15.0) continue
+                    if (shortTrend.changePct > 3.5 || longTrend.changePct > 7.0) {
+                        reject("حرکت بیش‌ازحد کشیده")
+                        continue
+                    }
 
                     val resistanceDistance = (shortTrend.recentResistance / candidate.price - 1.0) * 100.0
-                    if (resistanceDistance in 0.0..0.5) continue
+                    if (resistanceDistance in 0.0..0.75) {
+                        reject("مقاومت خیلی نزدیک")
+                        continue
+                    }
 
                     val risk = max(shortTrend.atr * 1.5, candidate.price * 0.005)
+                    val tp1DistancePct = (risk * 1.5 / candidate.price) * 100.0
+                    if (resistanceDistance > 0.0 && resistanceDistance <= tp1DistancePct * 1.15) {
+                        reject("فضای ناکافی تا مقاومت برای هدف اول")
+                        continue
+                    }
+                    // A live ticker above resistance is not enough: require a closed-candle
+                    // breakout and at least 20% stronger quote volume than recent candles.
+                    if (resistanceDistance <= 0.0 && !shortTrend.breakoutConfirmed) {
+                        reject("شکست مقاومت تأیید نشده")
+                        continue
+                    }
+
                     val signal = SpotSignal(
-                            symbol = candidate.symbol,
-                            price = candidate.price,
-                            change24h = candidate.change,
-                            volumeUsdt = candidate.volume,
-                            direction = "BULLISH",
-                            entry = candidate.price,
-                            stopLoss = max(candidate.price - risk, candidate.price * 0.5),
-                            takeProfit1 = candidate.price + risk * 1.5,
-                            takeProfit2 = candidate.price + risk * 2.0,
-                            trend15mPct = shortTrend.changePct,
-                            trend1hPct = longTrend.changePct,
-                            createdAt = now,
-                            expiresAt = now + 15 * 60 * 1000L
-                        )
+                        symbol = candidate.symbol,
+                        price = candidate.price,
+                        change24h = candidate.change,
+                        volumeUsdt = candidate.volume,
+                        direction = "BULLISH",
+                        entry = candidate.price,
+                        stopLoss = max(candidate.price - risk, candidate.price * 0.5),
+                        takeProfit1 = candidate.price + risk * 1.5,
+                        takeProfit2 = candidate.price + risk * 2.0,
+                        trend15mPct = shortTrend.changePct,
+                        trend1hPct = longTrend.changePct,
+                        createdAt = now,
+                        expiresAt = now + 15 * 60 * 1000L
+                    )
                     val volumeScore = minOf((candidate.volume / 1_000_000.0).pow(0.25), 3.0) * 5.0
                     val momentumScore = minOf(candidate.change, 15.0) * 0.8
                     val shortTrendScore = minOf(shortTrend.changePct, 3.0) * 4.0
-                    val hourlyTrendScore = minOf(longTrend.changePct, 8.0) * 1.5
+                    val hourlyTrendScore = minOf(longTrend.changePct, 7.0) * 1.5
                     val resistancePenalty = if (resistanceDistance > 0.0 && resistanceDistance < 1.0) {
                         (1.0 - resistanceDistance) * 8.0
                     } else 0.0
@@ -91,6 +126,19 @@ object ScannerEngine {
                     ranked.add(qualityScore to signal)
                 } catch (_: Exception) {
                     // A single unavailable pair must not cancel the rest of the scan.
+                    reject("دادهٔ تایم‌فریم در دسترس نبود")
+                }
+            }
+
+            val diagnostics = buildString {
+                append("نامزدهای واجد فیلتر اولیه: ${candidates.size}؛ ")
+                append("بررسی‌شده در تایم‌فریم‌ها: $checkedCandidates؛ ")
+                append("سیگنال خرید تأییدشده: ${ranked.size}.")
+                if (rejectionCounts.isNotEmpty()) {
+                    append("\nدلایل رد: ")
+                    append(rejectionCounts.entries
+                        .sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
+                        .joinToString("؛ ") { "${it.key}: ${it.value}" })
                 }
             }
 
@@ -98,7 +146,8 @@ object ScannerEngine {
                 success = true,
                 scannedAt = now,
                 candidateCount = candidates.size,
-                signals = ranked.sortedByDescending { it.first }.take(2).map { it.second }
+                signals = ranked.sortedByDescending { it.first }.take(2).map { it.second },
+                diagnostics = diagnostics
             )
         } catch (error: Exception) {
             ScanReport(
@@ -145,13 +194,30 @@ object ScannerEngine {
         }
         val recentRanges = ranges.takeLast(14)
         val atr = if (recentRanges.isEmpty()) 0.0 else recentRanges.average()
-        val recentStart = max(0, closedCount - 12)
+        // Use candles before the latest closed candle to avoid including the breakout candle itself.
+        val recentStart = max(0, closedCount - 13)
         var recentResistance = 0.0
-        for (i in recentStart until closedCount) {
+        for (i in recentStart until (closedCount - 1)) {
             val high = candles.getJSONArray(i).getString(2).toDouble()
             if (high > recentResistance) recentResistance = high
         }
-        return Trend(direction, changePct, atr, recentResistance)
+
+        val latestClosed = candles.getJSONArray(closedCount - 1)
+        val latestQuoteVolume = latestClosed.optString(7).toDoubleOrNull() ?: 0.0
+        val priorVolumes = mutableListOf<Double>()
+        val volumeStart = max(0, closedCount - 11)
+        for (i in volumeStart until (closedCount - 1)) {
+            val volume = candles.getJSONArray(i).optString(7).toDoubleOrNull() ?: 0.0
+            if (volume > 0.0) priorVolumes.add(volume)
+        }
+        val averagePriorVolume = if (priorVolumes.isEmpty()) 0.0 else priorVolumes.average()
+        val latestClosedPrice = closeAt(closedCount - 1)
+        val breakoutConfirmed = recentResistance > 0.0 &&
+            latestClosedPrice > recentResistance * 1.001 &&
+            averagePriorVolume > 0.0 &&
+            latestQuoteVolume >= averagePriorVolume * 1.2
+
+        return Trend(direction, changePct, atr, recentResistance, breakoutConfirmed)
     }
 
     private fun getText(address: String): String {
