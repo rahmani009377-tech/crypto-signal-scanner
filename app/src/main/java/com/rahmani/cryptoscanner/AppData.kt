@@ -59,7 +59,8 @@ data class ScanReport(
     val scannedAt: Long,
     val candidateCount: Int,
     val signals: List<SpotSignal>,
-    val error: String? = null
+    val error: String? = null,
+    val diagnostics: String? = null
 )
 
 object AppPrefs {
@@ -96,6 +97,7 @@ object AppPrefs {
             .putInt("candidate_count", report.candidateCount)
             .putString("signals", array.toString())
             .putString("scan_error", report.error.orEmpty())
+            .putString("scan_diagnostics", report.diagnostics.orEmpty())
             .apply()
     }
 
@@ -111,7 +113,8 @@ object AppPrefs {
             scannedAt = p.getLong("scanned_at", 0L),
             candidateCount = p.getInt("candidate_count", 0),
             signals = signals,
-            error = p.getString("scan_error", "").takeIf { !it.isNullOrBlank() }
+            error = p.getString("scan_error", "").takeIf { !it.isNullOrBlank() },
+            diagnostics = p.getString("scan_diagnostics", "").takeIf { !it.isNullOrBlank() }
         )
     }
 
