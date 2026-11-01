@@ -5,6 +5,7 @@ import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.util.Locale
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
