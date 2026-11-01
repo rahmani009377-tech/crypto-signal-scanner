@@ -367,11 +367,12 @@ def summarize_signal_state(candidates, actionable):
     bearish_confirmed = [
         item for item in candidates
         if item.get("direction") == "BEARISH"
-        and item.get("confirmation_status") == "CONFIRMED_8TF"
+        and item.get("confirmation_status") == "CONFIRMED_8TF_BEARISH_CONTEXT"
     ]
+    accepted_bullish_states = {"CONFIRMED_8TF", "CONFIRMED_NOT_TOP_3"}
     rejected_bullish = [
         item for item in bullish
-        if item.get("confirmation_status") != "CONFIRMED_15M_1H"
+        if item.get("confirmation_status") not in accepted_bullish_states
     ]
     rejection_counts = {}
     for item in rejected_bullish:
