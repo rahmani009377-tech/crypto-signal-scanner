@@ -18,7 +18,10 @@ MAX_15M_CHANGE = 3.5
 MAX_1H_CHANGE = 7.0
 VALID_MINUTES = 15
 MAX_SIGNALS_PER_MARKET = 30
-MAX_CONFIRMED_SPOT_SIGNALS = 2
+MAX_CANDIDATES_FOR_DEEP_SCAN = 10
+MAX_CONFIRMED_SPOT_SIGNALS = 3
+TIMEFRAMES = ("15m", "30m", "1h", "2h", "4h", "8h", "12h", "1d")
+MIN_BULLISH_TIMEFRAMES = 5
 
 
 def get_data(url):
@@ -102,7 +105,7 @@ def get_trend(symbol, interval):
     # Request enough candles to estimate volatility, and ignore the still-open candle.
     url = (
         f"{SPOT_KLINES_API}?symbol={symbol}"
-        f"&interval={interval}&limit=16"
+        f"&interval={interval}&limit=32"
     )
     candles = get_data(url)
     if not isinstance(candles, list) or len(candles) < 6:
@@ -186,89 +189,144 @@ def add_spot_trade_plan(signal, atr, recent_resistance=0.0):
     signal["action_hint"] = "SPOT_BUY_SETUP"
 
 
-def calculate_quality_score(signal, trend_15m, trend_1h):
-    """Rank confirmed bullish setups using trend, liquidity, momentum and resistance room."""
+def get_multi_timeframe_trends(symbol):
+    """Fetch closed-candle trends for every requested timeframe."""
+    return {interval: get_trend(symbol, interval) for interval in TIMEFRAMES}
+
+
+def calculate_quality_score(signal, trends):
+    """Transparent relative score; this ranks setups but does not predict profit."""
     volume = max(float(signal.get("volume_usdt", 0.0)), 1.0)
-    volume_score = min(max((volume / 1_000_000.0) ** 0.25, 0.0), 3.0) * 5.0
-    momentum_score = min(max(float(signal.get("change_24h", 0.0)), 0.0), 15.0) * 0.8
-    short_trend_score = min(max(float(trend_15m.get("change_pct", 0.0)), 0.0), 3.0) * 4.0
-    hourly_trend_score = min(max(float(trend_1h.get("change_pct", 0.0)), 0.0), 8.0) * 1.5
+    volume_score = min((volume / 1_000_000.0) ** 0.25, 3.0) * 5.0
+    momentum_score = min(max(float(signal.get("change_24h", 0.0)), 0.0), 15.0) * 0.5
+    weights = {
+        "15m": 1.5, "30m": 1.5, "1h": 1.5, "2h": 1.25,
+        "4h": 1.0, "8h": 0.75, "12h": 0.5, "1d": 0.5,
+    }
+    trend_score = sum(
+        weights[interval] * max(-2.0, min(2.0, float(trends[interval].get("change_pct", 0.0))))
+        for interval in TIMEFRAMES
+    )
+    bullish_count = sum(1 for item in trends.values() if item.get("direction") == "BULLISH")
+    alignment_bonus = bullish_count * 1.5
     distance = float(signal.get("resistance_distance_pct", 0.0))
-    # Penalize entries immediately beneath recent resistance; a breakout above it is not penalized.
     resistance_penalty = max(0.0, 1.0 - distance) * 8.0 if 0.0 < distance < 1.0 else 0.0
-    return round(volume_score + momentum_score + short_trend_score + hourly_trend_score - resistance_penalty, 2)
+    return round(volume_score + momentum_score + trend_score + alignment_bonus - resistance_penalty, 2)
 
 
 def confirm_spot_signals(candidates):
+    """Deep-check the ten strongest candidates across eight closed-candle timeframes."""
     confirmed = []
+    ranked_candidates = sorted(
+        candidates,
+        key=lambda item: (
+            item.get("direction") != "BULLISH",
+            -float(item.get("volume_usdt", 0.0)),
+            -abs(float(item.get("change_24h", 0.0))),
+        ),
+    )
+    deep_scan_symbols = {item.get("symbol") for item in ranked_candidates[:MAX_CANDIDATES_FOR_DEEP_SCAN]}
+
     for signal in candidates:
-        # Check every candidate in the bounded scan list, rather than stopping after eight.
+        if signal.get("symbol") not in deep_scan_symbols:
+            signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+            signal["confirmation_status"] = "NOT_IN_TOP_10"
+            continue
         try:
-            trend_15m = get_trend(signal["symbol"], "15m")
-            trend_1h = get_trend(signal["symbol"], "1h")
-            signal["trend_15m_pct"] = trend_15m["change_pct"]
-            signal["trend_1h_pct"] = trend_1h["change_pct"]
-            if signal["direction"] == "BULLISH":
-                change_24h = float(signal.get("change_24h", 0.0))
-                short_change = float(trend_15m.get("change_pct", 0.0))
-                hourly_change = float(trend_1h.get("change_pct", 0.0))
-                resistance = float(trend_15m.get("recent_resistance", 0.0))
-                price = float(signal.get("price", 0.0))
-                resistance_distance = ((resistance / price) - 1.0) * 100.0 if resistance > 0 and price > 0 else 0.0
-                # Reject late entries after a sharp move on the 15m/1h chart.
-                if (
-                    change_24h > MAX_BULLISH_CHANGE_24H
-                    or short_change > MAX_15M_CHANGE
-                    or hourly_change > MAX_1H_CHANGE
-                ):
-                    signal["status"] = "CANDIDATE_NOT_CONFIRMED"
-                    signal["confirmation_status"] = "OVEREXTENDED_MOVE"
-                    continue
+            trends = get_multi_timeframe_trends(signal["symbol"])
+            signal["timeframe_directions"] = {
+                interval: trends[interval]["direction"] for interval in TIMEFRAMES
+            }
+            signal["timeframe_changes_pct"] = {
+                interval: trends[interval]["change_pct"] for interval in TIMEFRAMES
+            }
+            signal["timeframes_checked"] = list(TIMEFRAMES)
+            for interval in ("15m", "30m", "1h"):
+                signal[f"trend_{interval}_pct"] = trends[interval]["change_pct"]
 
-                # A nearby ceiling can stop price before TP1. First reject a
-                # very close ceiling, then require room for TP1 plus a buffer.
-                if 0.0 < resistance_distance < 0.75:
-                    signal["status"] = "CANDIDATE_NOT_CONFIRMED"
-                    signal["confirmation_status"] = "RESISTANCE_TOO_CLOSE"
-                    continue
-
-                if resistance > 0 and price > 0:
-                    risk_distance = max(
-                        float(trend_15m.get("atr", 0.0) or 0.0) * 1.5,
-                        price * 0.005,
-                    )
-                    tp1_distance_pct = (risk_distance * 1.5 / price) * 100.0
-                    if resistance_distance > 0 and resistance_distance <= tp1_distance_pct * 1.15:
-                        signal["status"] = "CANDIDATE_NOT_CONFIRMED"
-                        signal["confirmation_status"] = "INSUFFICIENT_RESISTANCE_ROOM"
-                        continue
-
-                    # If price is already above the prior resistance, do not
-                    # treat a live-price spike as a breakout without candle-close
-                    # and relative-volume confirmation.
-                    if resistance_distance <= 0 and not trend_15m.get("breakout_confirmed", False):
-                        signal["status"] = "CANDIDATE_NOT_CONFIRMED"
-                        signal["confirmation_status"] = "BREAKOUT_NOT_CONFIRMED"
-                        continue
-            if (
-                trend_15m["direction"] == signal["direction"]
-                and trend_1h["direction"] == signal["direction"]
-            ):
-                if signal["direction"] == "BULLISH":
-                    add_spot_trade_plan(
-                        signal,
-                        trend_15m.get("atr", 0.0),
-                        trend_15m.get("recent_resistance", 0.0),
-                    )
-                    signal["quality_score"] = calculate_quality_score(signal, trend_15m, trend_1h)
-                else:
+            if signal["direction"] != "BULLISH":
+                bearish_count = sum(
+                    1 for item in trends.values() if item.get("direction") == "BEARISH"
+                )
+                if bearish_count >= MIN_BULLISH_TIMEFRAMES:
+                    signal["status"] = "CONFIRMED_BEARISH_CONTEXT"
+                    signal["confirmation_status"] = "CONFIRMED_8TF_BEARISH_CONTEXT"
                     signal["action_hint"] = "SPOT_SELL_OR_AVOID_BUY; SHORT_REQUIRES_FUTURES"
-                signal["status"] = "CONFIRMED_15M_1H"
-                signal["confirmation_status"] = "CONFIRMED_15M_1H"
-                confirmed.append(signal)
-            else:
+                    confirmed.append(signal)
+                else:
+                    signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+                    signal["confirmation_status"] = "TIMEFRAME_ALIGNMENT_INSUFFICIENT"
+                continue
+
+            short_required = ("15m", "30m", "1h")
+            if any(trends[interval]["direction"] != "BULLISH" for interval in short_required):
                 signal["status"] = "CANDIDATE_NOT_CONFIRMED"
-                signal["confirmation_status"] = "NOT_CONFIRMED_15M_1H"
+                signal["confirmation_status"] = "SHORT_TIMEFRAME_ALIGNMENT_FAILED"
+                continue
+
+            bullish_count = sum(
+                1 for item in trends.values() if item.get("direction") == "BULLISH"
+            )
+            higher_bearish = sum(
+                1 for interval in ("4h", "8h", "12h", "1d")
+                if trends[interval].get("direction") == "BEARISH"
+            )
+            if bullish_count < MIN_BULLISH_TIMEFRAMES or higher_bearish > 1:
+                signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+                signal["confirmation_status"] = "MULTI_TIMEFRAME_ALIGNMENT_FAILED"
+                continue
+
+            change_24h = float(signal.get("change_24h", 0.0))
+            short_change = float(trends["15m"].get("change_pct", 0.0))
+            hourly_change = float(trends["1h"].get("change_pct", 0.0))
+            price = float(signal.get("price", 0.0))
+            resistance = float(trends["15m"].get("recent_resistance", 0.0))
+            resistance_distance = (
+                ((resistance / price) - 1.0) * 100.0
+                if resistance > 0 and price > 0 else 0.0
+            )
+
+            if (
+                change_24h > MAX_BULLISH_CHANGE_24H
+                or short_change > MAX_15M_CHANGE
+                or hourly_change > MAX_1H_CHANGE
+            ):
+                signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+                signal["confirmation_status"] = "OVEREXTENDED_MOVE"
+                continue
+
+            if 0.0 < resistance_distance < 0.75:
+                signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+                signal["confirmation_status"] = "RESISTANCE_TOO_CLOSE"
+                continue
+
+            if resistance > 0 and price > 0:
+                risk_distance = max(float(trends["15m"].get("atr", 0.0) or 0.0) * 1.5, price * 0.005)
+                tp1_distance_pct = (risk_distance * 1.5 / price) * 100.0
+                if 0.0 < resistance_distance <= tp1_distance_pct * 1.15:
+                    signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+                    signal["confirmation_status"] = "INSUFFICIENT_RESISTANCE_ROOM"
+                    continue
+                if resistance_distance <= 0 and not trends["15m"].get("breakout_confirmed", False):
+                    signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+                    signal["confirmation_status"] = "BREAKOUT_NOT_CONFIRMED"
+                    continue
+
+            # Do not issue a plan if the live ticker has run far ahead of the latest
+            # closed 15m candle; that can turn a valid trend into a poor late entry.
+            last_closed = float(trends["15m"].get("last_close", price) or price)
+            if last_closed > 0 and price > last_closed * 1.01:
+                signal["status"] = "CANDIDATE_NOT_CONFIRMED"
+                signal["confirmation_status"] = "LIVE_PRICE_TOO_FAR_ABOVE_CLOSED_CANDLE"
+                continue
+
+            add_spot_trade_plan(signal, trends["15m"].get("atr", 0.0), resistance)
+            signal["quality_score"] = calculate_quality_score(signal, trends)
+            signal["bullish_timeframes"] = bullish_count
+            signal["status"] = "CONFIRMED_8TF"
+            signal["confirmation_status"] = "CONFIRMED_8TF"
+            signal["action_hint"] = "SPOT_BUY_SETUP"
+            confirmed.append(signal)
         except Exception as error:
             signal["status"] = "CANDIDATE_NOT_CONFIRMED"
             signal["confirmation_status"] = "DATA_UNAVAILABLE"
@@ -281,11 +339,10 @@ def confirm_spot_signals(candidates):
         signal["rank"] = rank
         signal["selected_top_signal"] = True
     for signal in bullish[MAX_CONFIRMED_SPOT_SIGNALS:]:
-        signal["status"] = "CONFIRMED_NOT_TOP_2"
-        signal["confirmation_status"] = "CONFIRMED_NOT_TOP_2"
+        signal["status"] = "CONFIRMED_NOT_TOP_3"
+        signal["confirmation_status"] = "CONFIRMED_NOT_TOP_3"
         signal["selected_top_signal"] = False
     return candidates, confirmed
-
 
 def summarize_candidates(candidates):
     """Expose why candidates were rejected so zero-signal scans are diagnosable."""
@@ -298,7 +355,7 @@ def summarize_candidates(candidates):
         "bullish_candidates": sum(1 for item in candidates if item.get("direction") == "BULLISH"),
         "bearish_candidates": sum(1 for item in candidates if item.get("direction") == "BEARISH"),
         "confirmed_candidates": sum(
-            1 for item in candidates if item.get("status") == "CONFIRMED_15M_1H"
+            1 for item in candidates if item.get("status") == "CONFIRMED_8TF"
         ),
         "rejection_reasons": dict(sorted(reasons.items(), key=lambda pair: (-pair[1], pair[0]))),
     }
@@ -310,7 +367,7 @@ def summarize_signal_state(candidates, actionable):
     bearish_confirmed = [
         item for item in candidates
         if item.get("direction") == "BEARISH"
-        and item.get("confirmation_status") == "CONFIRMED_15M_1H"
+        and item.get("confirmation_status") == "CONFIRMED_8TF"
     ]
     rejected_bullish = [
         item for item in bullish
@@ -370,7 +427,7 @@ def scan_market():
                 item for item in all_confirmed
                 if item.get("direction") == "BULLISH"
                 and item.get("selected_top_signal") is True
-                and item.get("status") == "CONFIRMED_15M_1H"
+                and item.get("status") == "CONFIRMED_8TF"
             ],
             key=lambda item: float(item.get("quality_score", 0.0)),
             reverse=True,
@@ -407,8 +464,8 @@ def scan_market():
         "spot_signals": spot_confirmed,
         "spot_candidates": spot_candidates,
         "notice": (
-            "Conservative Binance spot scanner. Only the top two fully confirmed "
-            "bullish setups are published in spot_signals and spot_confirmed_signals. "
+            "Conservative Binance spot scanner. Only the top three fully confirmed "
+            "bullish setups confirmed across eight timeframes are published in spot_signals and spot_confirmed_signals. "
             "Entries are rejected when resistance is too close, there is not enough "
             "room to TP1, or a breakout lacks candle-close/volume confirmation. "
             "Signals expire after 15 minutes. Scores and levels do not guarantee profit."
