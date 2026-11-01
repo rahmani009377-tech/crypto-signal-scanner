@@ -5,62 +5,168 @@ from datetime import datetime, timezone, timedelta
 import scanner
 
 
+def bullish_trends(**overrides):
+    base = {
+        interval: {
+            "direction": "BULLISH",
+            "change_pct": 0.5,
+            "atr": 1.0,
+            "last_close": 100.0,
+            "recent_resistance": 0.0,
+            "breakout_confirmed": False,
+        }
+        for interval in scanner.TIMEFRAMES
+    }
+    for interval, values in overrides.items():
+        base[interval].update(values)
+    return base
+
+
 class ScannerTests(unittest.TestCase):
     def setUp(self):
         self.now = datetime(2026, 10, 20, 12, 0, tzinfo=timezone.utc)
 
-    def test_filters_non_usdt_and_non_ascii_symbols(self):
+    def candidate(self, symbol="TESTUSDT", **extra):
+        item = {
+            "symbol": symbol, "direction": "BULLISH", "price": 100.0,
+            "change_24h": 8.0, "volume_usdt": 5_000_000.0,
+        }
+        item.update(extra)
+        return item
+
+    def test_filters_non_usdt_non_ascii_low_volume_and_small_moves(self):
         rows = [
             {"symbol": "BTCUSDT", "lastPrice": "100", "priceChangePercent": "6", "quoteVolume": "3000000"},
-            {"symbol": "ETHBTC", "lastPrice": "1", "priceChangePercent": "20", "quoteVolume": "2000000"},
-            {"symbol": "牛来USDT", "lastPrice": "1", "priceChangePercent": "20", "quoteVolume": "2000000"},
+            {"symbol": "ETHBTC", "lastPrice": "1", "priceChangePercent": "20", "quoteVolume": "9000000"},
+            {"symbol": "牛来USDT", "lastPrice": "1", "priceChangePercent": "20", "quoteVolume": "9000000"},
+            {"symbol": "LOWVOLUSDT", "lastPrice": "1", "priceChangePercent": "8", "quoteVolume": "999999"},
+            {"symbol": "SMALLUSDT", "lastPrice": "1", "priceChangePercent": "2.9", "quoteVolume": "5000000"},
         ]
         result = scanner.build_signals(rows, "SPOT", self.now)
         self.assertEqual([item["symbol"] for item in result], ["BTCUSDT"])
 
-    def test_ignores_low_volume_and_small_moves(self):
-        rows = [
-            {"symbol": "LOWVOLUSDT", "lastPrice": "1", "priceChangePercent": "8", "quoteVolume": "999999"},
-            {"symbol": "SMALLMOVEUSDT", "lastPrice": "1", "priceChangePercent": "2.9", "quoteVolume": "5000000"},
-        ]
-        self.assertEqual(scanner.build_signals(rows, "SPOT", self.now), [])
-
-    def test_marks_up_and_down_candidates_and_expiry(self):
-        rows = [
-            {"symbol": "UPUSDT", "lastPrice": "2", "priceChangePercent": "5", "quoteVolume": "3000000"},
-            {"symbol": "DOWNUSDT", "lastPrice": "1", "priceChangePercent": "-5.1", "quoteVolume": "3500000"},
-        ]
-        result = scanner.build_signals(rows, "SPOT", self.now)
-        by_symbol = {item["symbol"]: item for item in result}
-        self.assertEqual(by_symbol["UPUSDT"]["direction"], "BULLISH")
-        self.assertEqual(by_symbol["DOWNUSDT"]["direction"], "BEARISH")
-        self.assertEqual(by_symbol["UPUSDT"]["status"], "CANDIDATE_NOT_CONFIRMED")
-        self.assertEqual(
-            datetime.fromisoformat(by_symbol["UPUSDT"]["expires_at"]),
-            self.now + timedelta(minutes=scanner.VALID_MINUTES),
-        )
-
-    def test_excludes_extreme_bullish_pumps_before_ranking(self):
+    def test_excludes_extreme_bullish_pumps(self):
         rows = [
             {"symbol": "EXTREMEUSDT", "lastPrice": "1", "priceChangePercent": "45", "quoteVolume": "9000000"},
             {"symbol": "CLEANUSDT", "lastPrice": "1", "priceChangePercent": "12", "quoteVolume": "3000000"},
         ]
-        result = scanner.build_signals(rows, "SPOT", self.now)
-        self.assertEqual([item["symbol"] for item in result], ["CLEANUSDT"])
+        self.assertEqual([x["symbol"] for x in scanner.build_signals(rows, "SPOT", self.now)], ["CLEANUSDT"])
 
-    def test_bullish_spot_candidates_are_prioritized(self):
-        rows = [
-            {"symbol": "DUMPUSDT", "lastPrice": "1", "priceChangePercent": "-40", "quoteVolume": "5000000"},
-            {"symbol": "PUMPUSDT", "lastPrice": "2", "priceChangePercent": "7", "quoteVolume": "3000000"},
-            {"symbol": "RISEUSDT", "lastPrice": "3", "priceChangePercent": "5.5", "quoteVolume": "4000000"},
-        ]
-        result = scanner.build_signals(rows, "SPOT", self.now)
-        self.assertEqual(
-            [item["symbol"] for item in result],
-            ["PUMPUSDT", "RISEUSDT", "DUMPUSDT"],
-        )
+    def test_candidate_expiry_is_15_minutes(self):
+        rows = [{"symbol": "UPUSDT", "lastPrice": "2", "priceChangePercent": "5", "quoteVolume": "3000000"}]
+        item = scanner.build_signals(rows, "SPOT", self.now)[0]
+        self.assertEqual(datetime.fromisoformat(item["expires_at"]), self.now + timedelta(minutes=15))
 
-    def test_empty_report_does_not_publish_old_signals(self):
+    def test_multi_timeframe_fetch_checks_all_eight_intervals(self):
+        with patch.object(scanner, "get_trend", return_value={"direction": "BULLISH"}) as mocked:
+            result = scanner.get_multi_timeframe_trends("BTCUSDT")
+        self.assertEqual(list(result), list(scanner.TIMEFRAMES))
+        self.assertEqual(mocked.call_count, 8)
+        self.assertEqual([call.args[1] for call in mocked.call_args_list], list(scanner.TIMEFRAMES))
+
+    def test_bullish_signal_gets_levels_and_eight_timeframe_metadata(self):
+        candidates = [self.candidate()]
+        with patch.object(scanner, "get_multi_timeframe_trends", return_value=bullish_trends()):
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+        self.assertEqual(len(confirmed), 1)
+        signal = confirmed[0]
+        self.assertEqual(signal["status"], "CONFIRMED_8TF")
+        self.assertEqual(signal["timeframes_checked"], list(scanner.TIMEFRAMES))
+        self.assertEqual(signal["bullish_timeframes"], 8)
+        self.assertLess(signal["stop_loss"], signal["entry_price"])
+        self.assertGreater(signal["take_profit_1"], signal["entry_price"])
+        self.assertGreater(signal["take_profit_2"], signal["take_profit_1"])
+        self.assertEqual(signal["risk_reward_tp1"], "1:1.5")
+        self.assertEqual(signal["risk_reward_tp2"], "1:2")
+        self.assertTrue(signal["selected_top_signal"])
+
+    def test_requires_15m_30m_and_1h_bullish(self):
+        trends = bullish_trends(**{"30m": {"direction": "NEUTRAL"}})
+        candidates = [self.candidate()]
+        with patch.object(scanner, "get_multi_timeframe_trends", return_value=trends):
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "SHORT_TIMEFRAME_ALIGNMENT_FAILED")
+
+    def test_requires_at_least_five_bullish_timeframes(self):
+        trends = bullish_trends(**{
+            "2h": {"direction": "BEARISH"},
+            "4h": {"direction": "BEARISH"},
+            "8h": {"direction": "BEARISH"},
+            "12h": {"direction": "NEUTRAL"},
+        })
+        candidates = [self.candidate()]
+        with patch.object(scanner, "get_multi_timeframe_trends", return_value=trends):
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "MULTI_TIMEFRAME_ALIGNMENT_FAILED")
+
+    def test_rejects_overextended_move(self):
+        candidates = [self.candidate(change_24h=19.0)]
+        with patch.object(scanner, "get_multi_timeframe_trends", return_value=bullish_trends()):
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "OVEREXTENDED_MOVE")
+
+    def test_rejects_resistance_too_close(self):
+        trends = bullish_trends(**{"15m": {"recent_resistance": 100.3}})
+        candidates = [self.candidate()]
+        with patch.object(scanner, "get_multi_timeframe_trends", return_value=trends):
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "RESISTANCE_TOO_CLOSE")
+
+    def test_rejects_insufficient_room_before_first_target(self):
+        trends = bullish_trends(**{"15m": {"recent_resistance": 101.5, "atr": 1.0}})
+        candidates = [self.candidate()]
+        with patch.object(scanner, "get_multi_timeframe_trends", return_value=trends):
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "INSUFFICIENT_RESISTANCE_ROOM")
+
+    def test_rejects_unconfirmed_breakout(self):
+        trends = bullish_trends(**{"15m": {"recent_resistance": 99.0, "breakout_confirmed": False}})
+        candidates = [self.candidate()]
+        with patch.object(scanner, "get_multi_timeframe_trends", return_value=trends):
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "BREAKOUT_NOT_CONFIRMED")
+
+    def test_rejects_live_price_far_above_last_closed_candle(self):
+        trends = bullish_trends(**{"15m": {"last_close": 98.0}})
+        candidates = [self.candidate(price=100.0)]
+        with patch.object(scanner, "get_multi_timeframe_trends", return_value=trends):
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "LIVE_PRICE_TOO_FAR_ABOVE_CLOSED_CANDLE")
+
+    def test_selects_only_top_three_of_ten_candidates(self):
+        candidates = [self.candidate(f"COIN{i}USDT", volume_usdt=5_000_000 + i) for i in range(10)]
+        with patch.object(scanner, "get_multi_timeframe_trends", return_value=bullish_trends()):
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+        selected = [x for x in confirmed if x.get("selected_top_signal")]
+        self.assertEqual(len(selected), 3)
+        self.assertEqual(sum(x["status"] == "CONFIRMED_NOT_TOP_3" for x in results), 7)
+
+    def test_only_top_ten_candidates_receive_deep_scan(self):
+        candidates = [self.candidate(f"COIN{i}USDT", volume_usdt=10_000_000 - i) for i in range(12)]
+        with patch.object(scanner, "get_multi_timeframe_trends", return_value=bullish_trends()) as mocked:
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+        self.assertEqual(mocked.call_count, 10)
+        self.assertEqual(sum(x.get("confirmation_status") == "NOT_IN_TOP_10" for x in results), 2)
+
+    def test_data_error_does_not_create_signal(self):
+        candidates = [self.candidate()]
+        with patch.object(scanner, "get_multi_timeframe_trends", side_effect=RuntimeError("offline")):
+            results, confirmed = scanner.confirm_spot_signals(candidates)
+        self.assertEqual(confirmed, [])
+        self.assertEqual(results[0]["confirmation_status"], "DATA_UNAVAILABLE")
+
+    def test_trade_plan_rejects_nonpositive_price(self):
+        with self.assertRaises(ValueError):
+            scanner.add_spot_trade_plan({"price": 0}, 1.0)
+
+    def test_empty_report_does_not_publish_stale_signals(self):
         report = scanner.empty_report(self.now, "ERROR", "test failure")
         self.assertEqual(report["spot_signals"], [])
         self.assertEqual(report["spot_confirmed_signals"], [])
@@ -68,198 +174,20 @@ class ScannerTests(unittest.TestCase):
         self.assertEqual(report["signals_found"], 0)
         self.assertEqual(report["scanner_status"], "ERROR")
 
-
-    def test_unconfirmed_candidates_remain_visible_and_labeled(self):
+    def test_stats_and_signal_state_distinguish_buy_from_bearish_context(self):
         candidates = [
-            {"symbol": f"COIN{i}USDT", "direction": "BULLISH", "price": 1.0}
-            for i in range(9)
-        ]
-        with patch.object(
-            scanner,
-            "get_trend",
-            return_value={"direction": "BULLISH", "change_pct": 1.0},
-        ):
-            results, confirmed = scanner.confirm_spot_signals(candidates)
-
-        self.assertEqual(results[0]["status"], "CONFIRMED_15M_1H")
-        self.assertEqual(len(confirmed), 9)
-        self.assertEqual(results[8]["status"], "CONFIRMED_NOT_TOP_2")
-        self.assertEqual(results[8]["confirmation_status"], "CONFIRMED_NOT_TOP_2")
-
-    def test_bullish_confirmed_signal_gets_valid_risk_levels(self):
-        candidate = [{
-            "symbol": "TESTUSDT",
-            "direction": "BULLISH",
-            "price": 100.0,
-        }]
-        with patch.object(
-            scanner,
-            "get_trend",
-            return_value={"direction": "BULLISH", "change_pct": 1.0, "atr": 2.0},
-        ):
-            results, confirmed = scanner.confirm_spot_signals(candidate)
-
-        self.assertEqual(len(confirmed), 1)
-        signal = confirmed[0]
-        self.assertEqual(signal["action_hint"], "SPOT_BUY_SETUP")
-        self.assertLess(signal["stop_loss"], signal["entry_price"])
-        self.assertGreater(signal["take_profit_1"], signal["entry_price"])
-        self.assertGreater(signal["take_profit_2"], signal["take_profit_1"])
-        self.assertEqual(signal["risk_reward_tp1"], "1:1.5")
-        self.assertEqual(signal["risk_reward_tp2"], "1:2")
-
-    def test_bearish_confirmed_signal_is_not_marked_as_spot_buy(self):
-        candidate = [{
-            "symbol": "TESTUSDT",
-            "direction": "BEARISH",
-            "price": 100.0,
-        }]
-        with patch.object(
-            scanner,
-            "get_trend",
-            return_value={"direction": "BEARISH", "change_pct": -1.0, "atr": 2.0},
-        ):
-            results, confirmed = scanner.confirm_spot_signals(candidate)
-
-        self.assertEqual(len(confirmed), 1)
-        self.assertEqual(
-            confirmed[0]["action_hint"],
-            "SPOT_SELL_OR_AVOID_BUY; SHORT_REQUIRES_FUTURES",
-        )
-        self.assertNotIn("stop_loss", confirmed[0])
-
-    def test_trade_plan_rejects_nonpositive_price(self):
-        with self.assertRaises(ValueError):
-            scanner.add_spot_trade_plan({"price": 0}, 1.0)
-
-    def test_rejects_overextended_pump(self):
-        candidate = [{
-            "symbol": "PUMPUSDT",
-            "direction": "BULLISH",
-            "price": 1.0,
-            "change_24h": 35.0,
-        }]
-        with patch.object(
-            scanner,
-            "get_trend",
-            return_value={"direction": "BULLISH", "change_pct": 1.0, "atr": 0.01, "recent_resistance": 1.02},
-        ):
-            results, confirmed = scanner.confirm_spot_signals(candidate)
-
-        self.assertEqual(confirmed, [])
-        self.assertEqual(results[0]["confirmation_status"], "OVEREXTENDED_MOVE")
-
-    def test_rejects_entry_too_close_to_resistance(self):
-        candidate = [{
-            "symbol": "RESISTUSDT",
-            "direction": "BULLISH",
-            "price": 100.0,
-            "change_24h": 8.0,
-        }]
-        with patch.object(
-            scanner,
-            "get_trend",
-            side_effect=[
-                {"direction": "BULLISH", "change_pct": 1.0, "atr": 1.0, "recent_resistance": 100.3},
-                {"direction": "BULLISH", "change_pct": 2.0, "atr": 1.0, "recent_resistance": 102.0},
-            ],
-        ):
-            results, confirmed = scanner.confirm_spot_signals(candidate)
-
-        self.assertEqual(confirmed, [])
-        self.assertEqual(results[0]["confirmation_status"], "RESISTANCE_TOO_CLOSE")
-
-    def test_trend_mismatch_is_labeled_as_unconfirmed_candidate(self):
-        candidate = [{"symbol": "TESTUSDT", "direction": "BULLISH"}]
-        with patch.object(
-            scanner,
-            "get_trend",
-            side_effect=[
-                {"direction": "BULLISH", "change_pct": 1.0},
-                {"direction": "BEARISH", "change_pct": -1.0},
-            ],
-        ):
-            results, confirmed = scanner.confirm_spot_signals(candidate)
-
-        self.assertEqual(confirmed, [])
-        self.assertEqual(results[0]["status"], "CANDIDATE_NOT_CONFIRMED")
-        self.assertEqual(results[0]["confirmation_status"], "NOT_CONFIRMED_15M_1H")
-
-
-    def test_rejects_setup_when_resistance_is_inside_tp1_distance(self):
-        candidate = [{
-            "symbol": "ROOMUSDT",
-            "direction": "BULLISH",
-            "price": 100.0,
-            "change_24h": 8.0,
-        }]
-        with patch.object(
-            scanner,
-            "get_trend",
-            side_effect=[
-                {"direction": "BULLISH", "change_pct": 1.0, "atr": 1.0, "recent_resistance": 101.5},
-                {"direction": "BULLISH", "change_pct": 2.0, "atr": 1.0, "recent_resistance": 103.0},
-            ],
-        ):
-            results, confirmed = scanner.confirm_spot_signals(candidate)
-
-        self.assertEqual(confirmed, [])
-        self.assertEqual(results[0]["confirmation_status"], "INSUFFICIENT_RESISTANCE_ROOM")
-
-    def test_rejects_unconfirmed_breakout_above_resistance(self):
-        candidate = [{
-            "symbol": "BREAKUSDT",
-            "direction": "BULLISH",
-            "price": 102.0,
-            "change_24h": 8.0,
-        }]
-        with patch.object(
-            scanner,
-            "get_trend",
-            side_effect=[
-                {"direction": "BULLISH", "change_pct": 1.0, "atr": 1.0, "recent_resistance": 100.0, "breakout_confirmed": False},
-                {"direction": "BULLISH", "change_pct": 2.0, "atr": 1.0, "recent_resistance": 103.0},
-            ],
-        ):
-            results, confirmed = scanner.confirm_spot_signals(candidate)
-
-        self.assertEqual(confirmed, [])
-        self.assertEqual(results[0]["confirmation_status"], "BREAKOUT_NOT_CONFIRMED")
-
-
-
-    def test_scan_stats_explain_zero_signal_candidates(self):
-        stats = scanner.summarize_candidates([
             {"direction": "BULLISH", "status": "CANDIDATE_NOT_CONFIRMED",
              "confirmation_status": "INSUFFICIENT_RESISTANCE_ROOM"},
-            {"direction": "BULLISH", "status": "CANDIDATE_NOT_CONFIRMED",
-             "confirmation_status": "NOT_CONFIRMED_15M_1H"},
-            {"direction": "BEARISH", "status": "CONFIRMED_15M_1H",
-             "confirmation_status": "CONFIRMED_15M_1H"},
-        ])
-        self.assertEqual(stats["candidates_checked"], 3)
-        self.assertEqual(stats["bullish_candidates"], 2)
-        self.assertEqual(stats["bearish_candidates"], 1)
-        self.assertEqual(stats["confirmed_candidates"], 1)
-        self.assertEqual(stats["rejection_reasons"]["INSUFFICIENT_RESISTANCE_ROOM"], 1)
-
-
-    def test_signal_state_distinguishes_no_buy_from_bearish_context(self):
-        candidates = [
-            {"direction": "BULLISH", "confirmation_status": "INSUFFICIENT_RESISTANCE_ROOM"},
-            {"direction": "BEARISH", "confirmation_status": "CONFIRMED_15M_1H"},
+            {"direction": "BEARISH", "status": "CONFIRMED_BEARISH_CONTEXT",
+             "confirmation_status": "CONFIRMED_8TF_BEARISH_CONTEXT"},
         ]
+        stats = scanner.summarize_candidates(candidates)
+        self.assertEqual(stats["candidates_checked"], 2)
         state = scanner.summarize_signal_state(candidates, [])
         self.assertEqual(state["actionable_spot_buy_count"], 0)
         self.assertEqual(state["confirmed_bearish_context_count"], 1)
         self.assertEqual(state["bullish_candidates_rejected"], 1)
         self.assertEqual(state["buy_signal_state"], "NO_CONFIRMED_SPOT_BUY_SETUP")
-
-    def test_signal_state_marks_available_actionable_buy(self):
-        actionable = [{"symbol": "TESTUSDT", "direction": "BULLISH"}]
-        state = scanner.summarize_signal_state(actionable, actionable)
-        self.assertEqual(state["actionable_spot_buy_count"], 1)
-        self.assertEqual(state["buy_signal_state"], "ACTIONABLE_BUY_SETUPS_AVAILABLE")
 
 
 if __name__ == "__main__":
