@@ -241,6 +241,7 @@ def confirm_spot_signals(candidates):
             signal["status"] = "CANDIDATE_NOT_CONFIRMED"
             signal["confirmation_status"] = "NOT_IN_TOP_10"
             continue
+        signal["deep_scan_attempted"] = True
         try:
             trends = get_multi_timeframe_trends(signal["symbol"])
             signal["timeframe_directions"] = {
@@ -359,8 +360,13 @@ def summarize_candidates(candidates):
     for item in candidates:
         reason = item.get("confirmation_status", "NOT_CHECKED")
         reasons[reason] = reasons.get(reason, 0) + 1
+    deep_scanned = [item for item in candidates if item.get("deep_scan_attempted") is True]
     return {
-        "candidates_checked": len(candidates),
+        # Keep candidates_checked as the actual deep-scan count for truthful diagnostics.
+        "candidates_total": len(candidates),
+        "candidates_checked": len(deep_scanned),
+        "deep_scan_attempted": len(deep_scanned),
+        "not_deep_scanned": sum(1 for item in candidates if item.get("confirmation_status") == "NOT_IN_TOP_10"),
         "bullish_candidates": sum(1 for item in candidates if item.get("direction") == "BULLISH"),
         "bearish_candidates": sum(1 for item in candidates if item.get("direction") == "BEARISH"),
         "confirmed_candidates": sum(

@@ -177,12 +177,15 @@ class ScannerTests(unittest.TestCase):
     def test_stats_and_signal_state_distinguish_buy_from_bearish_context(self):
         candidates = [
             {"direction": "BULLISH", "status": "CANDIDATE_NOT_CONFIRMED",
-             "confirmation_status": "INSUFFICIENT_RESISTANCE_ROOM"},
+             "confirmation_status": "INSUFFICIENT_RESISTANCE_ROOM", "deep_scan_attempted": True},
             {"direction": "BEARISH", "status": "CONFIRMED_BEARISH_CONTEXT",
-             "confirmation_status": "CONFIRMED_8TF_BEARISH_CONTEXT"},
+             "confirmation_status": "CONFIRMED_8TF_BEARISH_CONTEXT", "deep_scan_attempted": True},
         ]
         stats = scanner.summarize_candidates(candidates)
+        self.assertEqual(stats["candidates_total"], 2)
         self.assertEqual(stats["candidates_checked"], 2)
+        self.assertEqual(stats["deep_scan_attempted"], 2)
+        self.assertEqual(stats["not_deep_scanned"], 0)
         state = scanner.summarize_signal_state(candidates, [])
         self.assertEqual(state["actionable_spot_buy_count"], 0)
         self.assertEqual(state["confirmed_bearish_context_count"], 1)
