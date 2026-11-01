@@ -2,6 +2,7 @@ import json
 import re
 import urllib.request
 import urllib.error
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 
@@ -190,8 +191,16 @@ def add_spot_trade_plan(signal, atr, recent_resistance=0.0):
 
 
 def get_multi_timeframe_trends(symbol):
-    """Fetch closed-candle trends for every requested timeframe."""
-    return {interval: get_trend(symbol, interval) for interval in TIMEFRAMES}
+    """Fetch all closed-candle timeframes concurrently to bound scan duration."""
+    with ThreadPoolExecutor(max_workers=len(TIMEFRAMES)) as executor:
+        futures = {
+            interval: executor.submit(get_trend, symbol, interval)
+            for interval in TIMEFRAMES
+        }
+        return {
+            interval: futures[interval].result(timeout=10)
+            for interval in TIMEFRAMES
+        }
 
 
 def calculate_quality_score(signal, trends):
