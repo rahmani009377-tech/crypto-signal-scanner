@@ -76,7 +76,7 @@ object SignalNotifications {
             )
         }
 
-        val message = signals.take(2).joinToString("\n") { signal ->
+        val message = signals.take(3).joinToString("\n") { signal ->
             "${signal.symbol} | ورود ${formatPrice(signal.entry)} | حدضرر ${formatPrice(signal.stopLoss)} | هدف۱ ${formatPrice(signal.takeProfit1)} | هدف۲ ${formatPrice(signal.takeProfit2)}"
         }
         val intent = Intent(context, MainActivity::class.java).apply {

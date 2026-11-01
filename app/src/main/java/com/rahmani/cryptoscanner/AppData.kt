@@ -17,7 +17,8 @@ data class SpotSignal(
     val trend15mPct: Double,
     val trend1hPct: Double,
     val createdAt: Long,
-    val expiresAt: Long
+    val expiresAt: Long,
+    val timeframeSummary: String = ""
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("symbol", symbol)
@@ -33,6 +34,7 @@ data class SpotSignal(
         put("trend1hPct", trend1hPct)
         put("createdAt", createdAt)
         put("expiresAt", expiresAt)
+        put("timeframeSummary", timeframeSummary)
     }
 
     companion object {
@@ -49,7 +51,8 @@ data class SpotSignal(
             trend15mPct = json.optDouble("trend15mPct", 0.0),
             trend1hPct = json.optDouble("trend1hPct", 0.0),
             createdAt = json.optLong("createdAt"),
-            expiresAt = json.optLong("expiresAt")
+            expiresAt = json.optLong("expiresAt"),
+            timeframeSummary = json.optString("timeframeSummary", "")
         )
     }
 }

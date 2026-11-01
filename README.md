@@ -4,8 +4,8 @@ A free, read-only scanner for Binance spot markets only. It never places trades 
 
 ## What it does
 - GitHub Actions requests a scan every five minutes and also supports manual runs. GitHub may delay scheduled jobs, so five minutes is the requested cadence, not a guaranteed delivery interval.
-- Reads public Binance spot market data and filters USDT pairs with a 24-hour move of at least 5% and quote volume of at least 1,000,000 USDT.
-- Checks the top candidates against closed 15-minute and 1-hour candles. Only matching candidates are placed in `spot_confirmed_signals`.
+- Reads public Binance spot market data and filters USDT pairs with a 24-hour gain of at least 3% and quote volume of at least 3,000,000 USDT; bullish daily moves above 18% are excluded to avoid chasing extreme pumps.
+- Ranks liquid USDT candidates, deep-checks the top 10 across closed 15m, 30m, 1h, 2h, 4h, 8h, 12h and 1d candles, then publishes at most the top 3 aligned spot-buy setups.
 - Confirmed bullish setups include an indicative entry price, ATR-based stop-loss, and two profit targets (risk/reward 1:1.5 and 1:2). These are estimates from the scan snapshot, not guaranteed execution prices.
 - Confirmed bearish signals are labeled as sell/avoid-buy context for spot; they are not instructions to open a short position.
 - Writes a fresh `signals.json` report with a Kabul timestamp and 15-minute expiry. If spot data fails, it replaces the report with an explicit error and empty signal lists rather than presenting stale signals.
@@ -38,7 +38,7 @@ python -m unittest discover -s tests -v
 
 ## Android app
 
-The Android project is in the repository root `app/`. The Android app's on-device notifications are independent of Telegram; no bot or Telegram token is required. It provides a Persian dashboard, manual spot scan, on-device market filtering, confirmed bullish setup cards, entry/stop-loss/take-profit estimates, an in-app background-scan toggle, local-notification toggle, and adjustable 24-hour volume/change filters.
+The Android project is in the repository root `app/`. The Android app's on-device notifications are independent of Telegram; no bot or Telegram token is required. It provides a Persian dashboard, manual spot scan, on-device market filtering, eight-timeframe confirmation (15m through 1d), up to three ranked bullish setup cards, entry/stop-loss/take-profit estimates, an in-app background-scan toggle, local-notification toggle, and adjustable 24-hour volume/change filters.
 
 ### Build and install
 1. Open the repository's **Actions** page and select **Build Android APK**.
