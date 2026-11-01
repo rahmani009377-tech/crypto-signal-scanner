@@ -364,7 +364,7 @@ def summarize_candidates(candidates):
         "bullish_candidates": sum(1 for item in candidates if item.get("direction") == "BULLISH"),
         "bearish_candidates": sum(1 for item in candidates if item.get("direction") == "BEARISH"),
         "confirmed_candidates": sum(
-            1 for item in candidates if item.get("status") == "CONFIRMED_8TF"
+            1 for item in candidates if item.get("status") in {"CONFIRMED_8TF", "CONFIRMED_NOT_TOP_3"}
         ),
         "rejection_reasons": dict(sorted(reasons.items(), key=lambda pair: (-pair[1], pair[0]))),
     }
@@ -474,8 +474,8 @@ def scan_market():
         "spot_signals": spot_confirmed,
         "spot_candidates": spot_candidates,
         "notice": (
-            "Conservative Binance spot scanner. Only the top three fully confirmed "
-            "bullish setups confirmed across eight timeframes are published in spot_signals and spot_confirmed_signals. "
+            "Conservative Binance spot scanner. The top three bullish setups confirmed across eight timeframes "
+            "are published in spot_signals and spot_confirmed_signals. "
             "Entries are rejected when resistance is too close, there is not enough "
             "room to TP1, or a breakout lacks candle-close/volume confirmation. "
             "Signals expire after 15 minutes. Scores and levels do not guarantee profit."
