@@ -24,6 +24,80 @@ MAX_CONFIRMED_SPOT_SIGNALS = 3
 TIMEFRAMES = ("15m", "30m", "1h", "2h", "4h", "8h", "12h", "1d")
 MIN_BULLISH_TIMEFRAMES = 5
 
+# Fibonacci retracement levels are context, not standalone entry triggers.
+FIB_RETRACEMENT_RATIOS = {
+    "23.6%": 0.236,
+    "38.2%": 0.382,
+    "50.0%": 0.500,
+    "61.8%": 0.618,
+    "78.6%": 0.786,
+}
+FIB_EXTENSION_RATIOS = {
+    "127.2%": 1.272,
+    "161.8%": 1.618,
+}
+
+
+def calculate_fibonacci_analysis(closed_candles, current_price, atr=0.0, lookback=24):
+    """Measure bullish swing retracements/extensions; never create a signal by itself."""
+    try:
+        price = float(current_price)
+        candles = list(closed_candles)[-lookback:]
+        if price <= 0 or len(candles) < 3:
+            return {"available": False, "reason": "INSUFFICIENT_CANDLES"}
+
+        lows = [float(candle[3]) for candle in candles]
+        highs = [float(candle[2]) for candle in candles]
+        if any(value <= 0 for value in lows + highs):
+            return {"available": False, "reason": "INVALID_SWING_PRICES"}
+
+        low_index = min(range(len(lows)), key=lows.__getitem__)
+        high_index = max(range(len(highs)), key=highs.__getitem__)
+        swing_low = lows[low_index]
+        swing_high = highs[high_index]
+        swing_range = swing_high - swing_low
+        if low_index >= high_index or swing_range <= 0:
+            return {"available": False, "reason": "NO_BULLISH_SWING"}
+
+        retracements = {
+            name: swing_high - swing_range * ratio
+            for name, ratio in FIB_RETRACEMENT_RATIOS.items()
+        }
+        extensions = {
+            name: swing_low + swing_range * ratio
+            for name, ratio in FIB_EXTENSION_RATIOS.items()
+        }
+        nearest_name, nearest_price = min(
+            retracements.items(), key=lambda item: abs(price - item[1])
+        )
+        distance_pct = abs(price - nearest_price) / price * 100.0
+        tolerance = max(float(atr or 0.0) * 0.25, price * 0.0025)
+        near_level = abs(price - nearest_price) <= tolerance
+        near_golden = (
+            abs(price - retracements["61.8%"]) <= tolerance
+        )
+        score = (4.0 if near_level else 0.0) + (3.0 if near_golden else 0.0)
+
+        return {
+            "available": True,
+            "swing_low": round(swing_low, 8),
+            "swing_high": round(swing_high, 8),
+            "retracement_levels": {
+                name: round(value, 8) for name, value in retracements.items()
+            },
+            "extension_targets": {
+                name: round(value, 8) for name, value in extensions.items()
+            },
+            "nearest_retracement": nearest_name,
+            "nearest_retracement_price": round(nearest_price, 8),
+            "distance_pct": round(distance_pct, 4),
+            "in_retracement_zone": near_level,
+            "golden_ratio_confluence": near_golden,
+            "confluence_score": score,
+        }
+    except (ValueError, TypeError, IndexError, KeyError):
+        return {"available": False, "reason": "INVALID_CANDLE_DATA"}
+
 
 def get_data(url):
     request = urllib.request.Request(
@@ -138,6 +212,8 @@ def get_trend(symbol, interval):
 
     atr = sum(true_ranges[-14:]) / len(true_ranges[-14:]) if true_ranges else 0.0
 
+    fibonacci = calculate_fibonacci_analysis(closed, last_close, atr)
+
     # Use the 12 candles BEFORE the latest closed candle as resistance; including
     # the latest candle's high can hide a breakout or distort room-to-target.
     prior_candles = closed[-13:-1] if len(closed) > 1 else closed[:-1]
@@ -167,6 +243,7 @@ def get_trend(symbol, interval):
         "last_close": last_close,
         "recent_resistance": recent_resistance,
         "breakout_confirmed": breakout_confirmed,
+        "fibonacci": fibonacci,
     }
 
 
@@ -220,7 +297,12 @@ def calculate_quality_score(signal, trends):
     alignment_bonus = bullish_count * 1.5
     distance = float(signal.get("resistance_distance_pct", 0.0))
     resistance_penalty = max(0.0, 1.0 - distance) * 8.0 if 0.0 < distance < 1.0 else 0.0
-    return round(volume_score + momentum_score + trend_score + alignment_bonus - resistance_penalty, 2)
+    fibonacci_bonus = float(signal.get("fibonacci_confluence_score", 0.0) or 0.0)
+    return round(
+        volume_score + momentum_score + trend_score + alignment_bonus
+        + fibonacci_bonus - resistance_penalty,
+        2,
+    )
 
 
 def confirm_spot_signals(candidates):
@@ -331,6 +413,26 @@ def confirm_spot_signals(candidates):
                 continue
 
             add_spot_trade_plan(signal, trends["15m"].get("atr", 0.0), resistance)
+
+            # Fibonacci is a confluence bonus only; it cannot independently confirm a trade.
+            fib_15m = trends["15m"].get("fibonacci", {})
+            fib_timeframes = [
+                interval for interval, item in trends.items()
+                if item.get("fibonacci", {}).get("in_retracement_zone") is True
+            ]
+            golden_timeframes = [
+                interval for interval, item in trends.items()
+                if item.get("fibonacci", {}).get("golden_ratio_confluence") is True
+            ]
+            signal["fibonacci_analysis"] = fib_15m
+            signal["fibonacci_confluence_timeframes"] = fib_timeframes
+            signal["golden_ratio_timeframes"] = golden_timeframes
+            signal["fibonacci_confluence_score"] = round(
+                float(fib_15m.get("confluence_score", 0.0) or 0.0)
+                + min(len(fib_timeframes) * 1.0, 4.0)
+                + min(len(golden_timeframes) * 1.0, 3.0),
+                2,
+            )
             signal["quality_score"] = calculate_quality_score(signal, trends)
             signal["bullish_timeframes"] = bullish_count
             signal["status"] = "CONFIRMED_8TF"
