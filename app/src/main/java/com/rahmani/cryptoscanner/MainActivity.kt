@@ -253,6 +253,21 @@ private fun SignalCard(signal: SpotSignal) {
             Text("روند ۱ ساعت: ${formatSignedPercent(signal.trend1hPct)}")
             Text("تأیید تایم‌فریم‌ها: ${signal.timeframeSummary}", style = MaterialTheme.typography.bodySmall)
             Divider()
+            Text("تحلیل فیبوناچی (۱۵ دقیقه)", fontWeight = FontWeight.Bold)
+            if (signal.fibAvailable) {
+                Text("نزدیک‌ترین سطح: ${signal.fibNearestName} در ${formatPrice(signal.fibNearestPrice)}")
+                Text("فاصله تا سطح: ${String.format(Locale.US, "%.2f", signal.fibDistancePct)}٪")
+                Text("سطح طلایی ۶۱٫۸٪: ${formatPrice(signal.fib618Price)}")
+                Text("امتدادها: ۱۲۷٫۲٪ = ${formatPrice(signal.fib1272Price)}  |  ۱۶۱٫۸٪ = ${formatPrice(signal.fib1618Price)}")
+                Text(
+                    if (signal.goldenRatioConfluence) "همگرایی نسبت طلایی ۶۱٫۸٪ دیده شد" else "همگرایی ۶۱٫۸٪ تأیید نشد",
+                    color = if (signal.goldenRatioConfluence) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold
+                )
+            } else {
+                Text("برای این حرکت، موج صعودی معتبر جهت محاسبه فیبوناچی پیدا نشد.", style = MaterialTheme.typography.bodySmall)
+            }
+            Divider()
             Text("حد ضرر: ${formatPrice(signal.stopLoss)}  (فاصله ${formatDistancePercent(signal.entry, signal.stopLoss)})")
             Text("حد سود ۱: ${formatPrice(signal.takeProfit1)}  (هدف ${formatGainPercent(signal.entry, signal.takeProfit1)})")
             Text("حد سود ۲: ${formatPrice(signal.takeProfit2)}  (هدف ${formatGainPercent(signal.entry, signal.takeProfit2)})")
