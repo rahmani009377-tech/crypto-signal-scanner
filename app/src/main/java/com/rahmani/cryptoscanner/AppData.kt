@@ -18,7 +18,15 @@ data class SpotSignal(
     val trend1hPct: Double,
     val createdAt: Long,
     val expiresAt: Long,
-    val timeframeSummary: String = ""
+    val timeframeSummary: String = "",
+    val fibAvailable: Boolean = false,
+    val fibNearestName: String = "",
+    val fibNearestPrice: Double = 0.0,
+    val fibDistancePct: Double = 0.0,
+    val fib618Price: Double = 0.0,
+    val fib1272Price: Double = 0.0,
+    val fib1618Price: Double = 0.0,
+    val goldenRatioConfluence: Boolean = false
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
         put("symbol", symbol)
@@ -35,6 +43,14 @@ data class SpotSignal(
         put("createdAt", createdAt)
         put("expiresAt", expiresAt)
         put("timeframeSummary", timeframeSummary)
+        put("fibAvailable", fibAvailable)
+        put("fibNearestName", fibNearestName)
+        put("fibNearestPrice", fibNearestPrice)
+        put("fibDistancePct", fibDistancePct)
+        put("fib618Price", fib618Price)
+        put("fib1272Price", fib1272Price)
+        put("fib1618Price", fib1618Price)
+        put("goldenRatioConfluence", goldenRatioConfluence)
     }
 
     companion object {
@@ -52,7 +68,15 @@ data class SpotSignal(
             trend1hPct = json.optDouble("trend1hPct", 0.0),
             createdAt = json.optLong("createdAt"),
             expiresAt = json.optLong("expiresAt"),
-            timeframeSummary = json.optString("timeframeSummary", "")
+            timeframeSummary = json.optString("timeframeSummary", ""),
+            fibAvailable = json.optBoolean("fibAvailable", false),
+            fibNearestName = json.optString("fibNearestName", ""),
+            fibNearestPrice = json.optDouble("fibNearestPrice", 0.0),
+            fibDistancePct = json.optDouble("fibDistancePct", 0.0),
+            fib618Price = json.optDouble("fib618Price", 0.0),
+            fib1272Price = json.optDouble("fib1272Price", 0.0),
+            fib1618Price = json.optDouble("fib1618Price", 0.0),
+            goldenRatioConfluence = json.optBoolean("goldenRatioConfluence", false)
         )
     }
 }
