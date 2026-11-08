@@ -193,5 +193,38 @@ class ScannerTests(unittest.TestCase):
         self.assertEqual(state["buy_signal_state"], "NO_CONFIRMED_SPOT_BUY_SETUP")
 
 
+    def test_fibonacci_analysis_finds_golden_ratio_retracement(self):
+        candles = [
+            [0, 0, 110.0, 100.0, 105.0],
+            [0, 0, 150.0, 110.0, 140.0],
+            [0, 0, 145.0, 120.0, 130.0],
+        ]
+        analysis = scanner.calculate_fibonacci_analysis(candles, 119.1, atr=1.0)
+        self.assertTrue(analysis["available"])
+        self.assertAlmostEqual(analysis["retracement_levels"]["61.8%"], 119.1, places=6)
+        self.assertTrue(analysis["in_retracement_zone"])
+        self.assertTrue(analysis["golden_ratio_confluence"])
+        self.assertEqual(analysis["nearest_retracement"], "61.8%")
+        self.assertAlmostEqual(analysis["extension_targets"]["161.8%"], 180.9, places=6)
+
+    def test_fibonacci_analysis_does_not_assume_bullish_swing_when_high_is_first(self):
+        candles = [
+            [0, 0, 150.0, 130.0, 140.0],
+            [0, 0, 140.0, 100.0, 110.0],
+            [0, 0, 125.0, 105.0, 120.0],
+        ]
+        analysis = scanner.calculate_fibonacci_analysis(candles, 110.0, atr=1.0)
+        self.assertFalse(analysis["available"])
+        self.assertEqual(analysis["reason"], "NO_BULLISH_SWING")
+
+    def test_fibonacci_confluence_adds_score_without_being_a_trade_gate(self):
+        trends = bullish_trends()
+        signal = self.candidate()
+        baseline = scanner.calculate_quality_score(signal, trends)
+        signal["fibonacci_confluence_score"] = 7.0
+        with_bonus = scanner.calculate_quality_score(signal, trends)
+        self.assertEqual(round(with_bonus - baseline, 2), 7.0)
+
+
 if __name__ == "__main__":
     unittest.main()
