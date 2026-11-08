@@ -26,7 +26,16 @@ object ScannerEngine {
         val atr: Double,
         val recentResistance: Double,
         val breakoutConfirmed: Boolean,
-        val lastClosedPrice: Double
+        val lastClosedPrice: Double,
+        val fibAvailable: Boolean,
+        val fibNearestName: String,
+        val fibNearestPrice: Double,
+        val fibDistancePct: Double,
+        val fib618Price: Double,
+        val fib1272Price: Double,
+        val fib1618Price: Double,
+        val goldenRatioConfluence: Boolean,
+        val fibNearLevel: Boolean
     )
 
     fun scan(context: Context): ScanReport {
@@ -111,7 +120,10 @@ object ScannerEngine {
                     val resistancePenalty = if (resistanceDistance > 0.0 && resistanceDistance < 1.0) {
                         (1.0 - resistanceDistance) * 8.0
                     } else 0.0
-                    val score = volumeScore + momentumScore + trendScore + bullishCount * 1.5 - resistancePenalty
+                    val fibonacciBonus = (if (short.fibNearLevel) 4.0 else 0.0) +
+                        (if (short.goldenRatioConfluence) 3.0 else 0.0)
+                    val score = volumeScore + momentumScore + trendScore + bullishCount * 1.5 -
+                        resistancePenalty + fibonacciBonus
                     val summary = timeframes.joinToString(" | ") { interval -> "${interval}:${trends.getValue(interval).direction}" }
 
                     ranked.add(score to SpotSignal(
@@ -120,7 +132,15 @@ object ScannerEngine {
                         stopLoss = stop, takeProfit1 = tp1, takeProfit2 = tp2,
                         trend15mPct = short.changePct, trend1hPct = hourly.changePct,
                         createdAt = now, expiresAt = now + 15 * 60 * 1000L,
-                        timeframeSummary = summary
+                        timeframeSummary = summary,
+                        fibAvailable = short.fibAvailable,
+                        fibNearestName = short.fibNearestName,
+                        fibNearestPrice = short.fibNearestPrice,
+                        fibDistancePct = short.fibDistancePct,
+                        fib618Price = short.fib618Price,
+                        fib1272Price = short.fib1272Price,
+                        fib1618Price = short.fib1618Price,
+                        goldenRatioConfluence = short.goldenRatioConfluence
                     ))
                 } catch (_: Exception) {
                     reject("دادهٔ یکی از تایم‌فریم‌ها در دسترس نبود")
@@ -194,6 +214,37 @@ object ScannerEngine {
         val atrValues = ranges.takeLast(14)
         val atr = if (atrValues.isEmpty()) 0.0 else atrValues.average()
 
+        // Fibonacci analysis uses only closed candles from the latest 24-candle swing.
+        val fibStart = max(0, closedCount - 24)
+        var swingLow = Double.POSITIVE_INFINITY
+        var swingHigh = 0.0
+        var swingLowIndex = -1
+        var swingHighIndex = -1
+        for (i in fibStart until closedCount) {
+            val low = candle(i).getString(3).toDouble()
+            val high = candle(i).getString(2).toDouble()
+            if (low < swingLow) { swingLow = low; swingLowIndex = i }
+            if (high > swingHigh) { swingHigh = high; swingHighIndex = i }
+        }
+        val fibRange = swingHigh - swingLow
+        val fibAvailable = swingLowIndex >= 0 && swingHighIndex > swingLowIndex && fibRange > 0.0
+        val fibLevels = if (fibAvailable) mapOf(
+            "23.6%" to swingHigh - fibRange * 0.236,
+            "38.2%" to swingHigh - fibRange * 0.382,
+            "50.0%" to swingHigh - fibRange * 0.500,
+            "61.8%" to swingHigh - fibRange * 0.618,
+            "78.6%" to swingHigh - fibRange * 0.786
+        ) else emptyMap()
+        val nearestFib = fibLevels.minByOrNull { abs(lastClose - it.value) }
+        val fibTolerance = max(atr * 0.25, lastClose * 0.0025)
+        val fibNearLevel = nearestFib != null && abs(lastClose - nearestFib.value) <= fibTolerance
+        val fib618Price = fibLevels["61.8%"] ?: 0.0
+        val goldenRatioConfluence = fibAvailable && abs(lastClose - fib618Price) <= fibTolerance
+        val fibDistancePct = if (nearestFib != null && lastClose > 0.0)
+            abs(lastClose - nearestFib.value) / lastClose * 100.0 else 0.0
+        val fib1272Price = if (fibAvailable) swingLow + fibRange * 1.272 else 0.0
+        val fib1618Price = if (fibAvailable) swingLow + fibRange * 1.618 else 0.0
+
         val resistanceStart = max(0, closedCount - 13)
         var resistance = 0.0
         for (i in resistanceStart until (closedCount - 1)) {
@@ -206,7 +257,12 @@ object ScannerEngine {
         val averageVolume = if (previousVolumes.isEmpty()) 0.0 else previousVolumes.average()
         val breakout = resistance > 0.0 && lastClose > resistance * 1.001 &&
             averageVolume > 0.0 && latestVolume >= averageVolume * 1.2
-        return Trend(direction, changePct, atr, resistance, breakout, lastClose)
+        return Trend(
+            direction, changePct, atr, resistance, breakout, lastClose,
+            fibAvailable, nearestFib?.key.orEmpty(), nearestFib?.value ?: 0.0,
+            fibDistancePct, fib618Price, fib1272Price, fib1618Price,
+            goldenRatioConfluence, fibNearLevel
+        )
     }
 
     private fun getText(address: String): String {
